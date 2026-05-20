@@ -694,7 +694,13 @@ REGRAS:
         showTypingIndicator();
 
         try {
-            const openingSystemPrompt = currentLead.systemPrompt + `\n\nEsta é a primeira mensagem da ligação. Você recebe a chamada. Dê sua saudação de atendimento como ${currentLead.name}. Responda em JSON: {"reply": "...", "done": false, "failed": false}`;
+            let openingSystemPrompt = currentLead.systemPrompt;
+            
+            if (currentLead.type === 'outbound') {
+                openingSystemPrompt += `\n\nEsta é a primeira mensagem da ligação. O SDR (vendedor) está te ligando e você acabou de atender. Dê sua saudação de atendimento como ${currentLead.name} (ex: "Alô?", "Quem fala?"). Responda em JSON: {"reply": "...", "done": false, "failed": false}`;
+            } else {
+                openingSystemPrompt += `\n\nEsta é a primeira mensagem da ligação. Você (cliente) ligou para a empresa do SDR (Clean/Hidrogest). O SDR acabou de atender a sua ligação. Inicie a conversa se apresentando brevemente e explicando o motivo do seu contato baseado no seu problema/contexto. Responda em JSON: {"reply": "...", "done": false, "failed": false}`;
+            }
 
             const response = await fetch("https://api.anthropic.com/v1/messages", {
                 method: "POST",
@@ -725,7 +731,11 @@ REGRAS:
         } catch (err) {
             const typingEl = document.getElementById('typing-indicator');
             if (typingEl) typingEl.remove();
-            addMessage("Alô? Pode falar.", 'bot');
+            
+            const fallbackMsg = currentLead.type === 'outbound' 
+                ? "Alô? Pode falar." 
+                : `Olá, aqui é ${currentLead.name}, estou ligando porque estava olhando o site de vocês.`;
+            addMessage(fallbackMsg, 'bot');
         }
 
         setInputEnabled(true);
