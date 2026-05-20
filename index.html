@@ -4,24 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador de Prospecção B2B | Clean + Hidrogest</title>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
-    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Space Grotesk', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
                         clean: { main: '#10b981', dark: '#064e3b', blue: '#0284c7' },
                         hidro: { main: '#0ea5e9', dark: '#0369a1' },
@@ -32,43 +22,41 @@
             }
         }
     </script>
-    
     <style>
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #10b981; }
-
         @keyframes slideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideInLeft { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        
         .slide-in { animation: slideIn 0.35s ease-out forwards; }
         .slide-in-left { animation: slideInLeft 0.35s ease-out forwards; }
         .fade-up { animation: fadeUp 0.4s ease-out forwards; }
-
         .bg-grid-pattern {
             background-image: linear-gradient(to right, #334155 1px, transparent 1px), linear-gradient(to bottom, #334155 1px, transparent 1px);
             background-size: 24px 24px;
         }
-
-        .chat-bubble-user {
-            border-bottom-right-radius: 0;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-        .chat-bubble-bot {
-            border-bottom-left-radius: 0;
-            background: #334155;
-            border: 1px solid #475569;
-        }
+        .chat-bubble-user { border-bottom-right-radius: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .chat-bubble-bot { border-bottom-left-radius: 0; background: #334155; border: 1px solid #475569; }
         .typing-dot { animation: typing 1.4s infinite ease-in-out; fill: #94a3b8; }
         .typing-dot:nth-child(1) { animation-delay: 0s; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes typing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-
         .lead-card { transition: all 0.2s ease; cursor: pointer; }
         .lead-card:hover { transform: translateY(-4px); border-color: #10b981; box-shadow: 0 10px 25px -5px rgba(16,185,129,0.1); }
+
+        /* Feedback panel */
+        #feedback-panel { transition: all 0.3s ease; }
+        .score-bar-fill { transition: width 0.8s ease-out; }
+
+        /* Streaming cursor */
+        .stream-cursor::after { content: '▋'; animation: blink 0.7s infinite; color: #94a3b8; font-size: 0.8em; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* Pill badge for AI */
+        .ai-badge { background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%); font-size: 10px; padding: 2px 8px; border-radius: 999px; color: white; font-weight: 700; letter-spacing: 0.05em; vertical-align: middle; margin-left: 6px; }
     </style>
 </head>
 <body class="bg-darkbase text-slate-300 font-sans antialiased overflow-x-hidden selection:bg-clean-main selection:text-white h-screen flex flex-col">
@@ -77,11 +65,10 @@
     <nav class="w-full z-50 bg-darkbase border-b border-slate-800 shrink-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-headset text-clean-main text-xl"></i>
-                        <span class="font-display font-bold text-xl text-white">SDR Simulator</span>
-                    </div>
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-headset text-clean-main text-xl"></i>
+                    <span class="font-display font-bold text-xl text-white">SDR Simulator</span>
+                    <span class="ai-badge">IA</span>
                 </div>
                 <div class="flex items-center gap-3">
                     <span class="px-3 py-1 bg-clean-main/10 text-clean-main border border-clean-main/20 rounded text-xs font-bold tracking-wider">TREINAMENTO B2B</span>
@@ -90,10 +77,9 @@
         </div>
     </nav>
 
-    <!-- App Container -->
     <main class="flex-1 relative overflow-hidden flex flex-col">
         <div class="absolute inset-0 bg-grid-pattern opacity-[0.03] z-0 pointer-events-none"></div>
-        
+
         <!-- SECTION 1: LEADS DASHBOARD -->
         <div id="view-dashboard" class="flex-1 overflow-y-auto px-4 py-12 relative z-10 block">
             <div class="max-w-7xl mx-auto">
@@ -102,10 +88,13 @@
                         Selecione seu <span class="text-transparent bg-clip-text bg-gradient-to-r from-clean-main to-hidro-main">Lead</span>
                     </h1>
                     <p class="text-slate-400 text-lg max-w-2xl mx-auto">
-                        Escolha um perfil abaixo. Cada cliente tem dores, objeções e comportamentos diferentes. Aplique o pitch correto para agendar a demonstração.
+                        Clientes com IA real. Cada resposta é única. Aplique o pitch correto para agendar a demonstração.
                     </p>
+                    <div class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-violet-500/10 border border-violet-500/20 rounded-full text-violet-300 text-sm">
+                        <i class="fa-solid fa-robot text-xs"></i>
+                        Clientes respondem com inteligência artificial — comportamento real e imprevisível
+                    </div>
                 </div>
-
                 <div class="flex justify-center gap-4 mb-8 fade-up" style="animation-delay: 0.1s;">
                     <button id="tab-outbound" onclick="switchTab('outbound')" class="px-6 py-2.5 rounded-full font-bold transition-all bg-clean-main text-white shadow-lg shadow-clean-main/20 border border-clean-main">
                         <i class="fa-solid fa-phone-volume mr-2"></i> Fazer Ligações (Outbound)
@@ -114,55 +103,54 @@
                         <i class="fa-solid fa-headset mr-2"></i> Receber Ligações (Inbound)
                     </button>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="leads-grid">
-                    <!-- Cards de Leads serão injetados aqui -->
-                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="leads-grid"></div>
             </div>
         </div>
 
         <!-- SECTION 2: CHAT INTERFACE -->
-        <div id="view-chat" class="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full p-4 lg:p-6 gap-6 relative z-10 hidden h-full">
-            
-            <!-- Sidebar Briefing -->
-            <div class="w-full lg:w-1/3 bg-darkcard border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col h-fit lg:h-full overflow-y-auto slide-in-left">
+        <div id="view-chat" class="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full p-4 lg:p-6 gap-6 relative z-10 hidden h-full overflow-hidden">
+
+            <!-- Sidebar -->
+            <div class="w-full lg:w-1/3 bg-darkcard border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col h-fit lg:h-full overflow-y-auto slide-in-left shrink-0">
                 <button onclick="showDashboard()" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2 mb-6 w-fit">
                     <i class="fa-solid fa-arrow-left"></i> Voltar aos contatos
                 </button>
-
                 <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2 border-b border-slate-700 pb-4">
                     <i class="fa-solid fa-clipboard-user text-clean-main"></i> Briefing da Call
                 </h3>
-                
                 <div class="flex items-center gap-4 mb-6">
                     <div id="briefing-avatar" class="w-14 h-14 rounded-full flex items-center justify-center text-2xl shrink-0"></div>
                     <div>
                         <p class="text-white font-bold text-lg leading-tight" id="briefing-name"></p>
                         <p class="text-sm text-slate-400" id="briefing-role"></p>
-                        <p class="text-xs font-bold mt-1 uppercase tracking-wider" id="briefing-company" style="color:var(--lead-color)"></p>
+                        <p class="text-xs font-bold mt-1 uppercase tracking-wider" id="briefing-company"></p>
                     </div>
                 </div>
-
                 <div class="space-y-4">
                     <div class="bg-red-500/10 rounded-xl p-4 border border-red-500/20">
                         <p class="text-xs font-bold text-red-400 uppercase mb-2 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> Dores & Objeções</p>
                         <p class="text-sm text-slate-300" id="briefing-pain"></p>
                     </div>
-
                     <div class="bg-clean-main/10 rounded-xl p-4 border border-clean-main/20">
-                        <p class="text-xs font-bold text-clean-main uppercase mb-2 flex items-center gap-2"><i class="fa-solid fa-lightbulb"></i> Seus Trunfos (Palavras-chave)</p>
+                        <p class="text-xs font-bold text-clean-main uppercase mb-2 flex items-center gap-2"><i class="fa-solid fa-lightbulb"></i> Seus Trunfos</p>
                         <p class="text-sm text-slate-300" id="briefing-trunfos"></p>
                     </div>
+                    <div class="bg-violet-500/10 rounded-xl p-4 border border-violet-500/20">
+                        <p class="text-xs font-bold text-violet-400 uppercase mb-2 flex items-center gap-2"><i class="fa-solid fa-robot"></i> Comportamento da IA</p>
+                        <p class="text-sm text-slate-300" id="briefing-ai-note"></p>
+                    </div>
                 </div>
-
+                <div id="feedback-panel" class="hidden mt-4 bg-slate-800/50 rounded-xl p-4 border border-slate-600">
+                    <p class="text-xs font-bold text-yellow-400 uppercase mb-3 flex items-center gap-2"><i class="fa-solid fa-star"></i> Análise da Call</p>
+                    <div id="feedback-content" class="text-sm text-slate-300 space-y-2"></div>
+                </div>
                 <button onclick="resetCall()" class="mt-auto pt-6 w-full py-3 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors font-semibold text-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-rotate-left"></i> Reiniciar Ligação
                 </button>
             </div>
 
             <!-- Chat Area -->
-            <div class="w-full lg:w-2/3 bg-darkcard border border-slate-700 rounded-2xl flex flex-col h-[60vh] lg:h-full shadow-2xl slide-in">
-                <!-- Chat Header -->
+            <div class="w-full lg:w-2/3 bg-darkcard border border-slate-700 rounded-2xl flex flex-col shadow-2xl slide-in overflow-hidden">
                 <div class="h-16 border-b border-slate-700 flex items-center justify-between px-6 bg-slate-800/50 rounded-t-2xl shrink-0">
                     <div class="flex items-center gap-3">
                         <div class="relative">
@@ -178,550 +166,551 @@
                         <i class="fa-solid fa-phone-slash hover:text-red-500 cursor-pointer transition-colors" onclick="showDashboard()" title="Desligar"></i>
                     </div>
                 </div>
-
-                <!-- Chat Messages Area -->
-                <div id="chat-messages" class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 scroll-smooth bg-[#0f172a]/50">
-                    <!-- Messages will be injected here via JS -->
-                </div>
-
-                <!-- Chat Input Area -->
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 scroll-smooth bg-[#0f172a]/50 min-h-0"></div>
                 <div class="p-4 border-t border-slate-700 bg-slate-800/80 rounded-b-2xl shrink-0 backdrop-blur-sm">
-                    <form id="chat-form" class="flex gap-2 relative">
+                    <form id="chat-form" class="flex gap-2">
                         <input type="text" id="chat-input" class="flex-1 bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-clean-main focus:ring-1 focus:ring-clean-main transition-all" placeholder="Digite sua resposta e pressione Enter..." autocomplete="off">
-                        <button type="submit" class="bg-clean-main hover:bg-clean-dark text-white w-14 rounded-xl flex items-center justify-center transition-colors shadow-lg shadow-clean-main/20 disabled:opacity-50 disabled:cursor-not-allowed" id="chat-send-btn">
+                        <button type="submit" class="bg-clean-main hover:bg-emerald-600 text-white w-14 rounded-xl flex items-center justify-center transition-colors shadow-lg shadow-clean-main/20 disabled:opacity-50 disabled:cursor-not-allowed" id="chat-send-btn">
                             <i class="fa-solid fa-paper-plane text-lg"></i>
                         </button>
                     </form>
                 </div>
             </div>
-
         </div>
     </main>
 
     <script>
-        // Função auxiliar para buscar múltiplas palavras-chave
-        function hasAny(text, words) {
-            return words.some(w => text.includes(w));
-        }
-
-        // Função auxiliar para lidar com cumprimentos (small talk)
-        function isGreeting(text) {
-            const greetings = ['oi', 'ola', 'olá', 'bom dia', 'boa tarde', 'boa noite', 'tudo bem', 'como vai'];
-            return greetings.includes(text.trim()) || text.trim().length <= 3;
-        }
-
-        const LEADS = [
-            {
-                id: 'mineradora',
-                type: 'outbound',
-                name: 'Carlos Ribeiro',
-                role: 'Gestor de Seg. de Barragens',
-                company: 'Mineração Vale Ouro',
-                icon: 'fa-helmet-safety',
-                color: '#eab308',
-                bgClass: 'bg-yellow-500/20 text-yellow-500',
-                briefing: {
-                    pain: 'Usam molinete antigo. Têm medo do risco humano (equipe na água) e a lama (fundo móvel) atrapalha a medição. Orçamento curto para comprar.',
-                    trunfos: 'Diga que o <b>evento</b> é <b>gratuito/não é venda</b>. Fale sobre <b>segurança/barco remoto (USV)</b> e correção de lama com <b>RTK</b>.'
-                },
-                greetings: "Alô, Carlos falando. Tô no meio de um relatório da ANA, o que você manda?",
-                logic: function(step, msg, state) {
-                    let text = msg.toLowerCase();
-                    
-                    if (isGreeting(text)) return { reply: "Boa tarde. Qual o assunto? Tô meio enrolado aqui, seja direto.", nextStep: step };
-
-                    if (step === 0) {
-                        if (hasAny(text, ["evento", "convite", "clean", "hidrogest", "demonstração", "tecnologia", "conhecer", "apresentar"])) {
-                            state.frustration = 0;
-                            return { reply: "Olha, se você tá ligando para vender equipamento ADCP, eu já te adianto que não tenho verba neste semestre. Já temos nossos molinetes.", nextStep: 1 };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Amigo, você tá dando muita volta e meu tempo é curto. Me manda um email depois. Tchau.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = [
-                            "Desculpe, não peguei o objetivo da ligação. É para oferecer algum produto?",
-                            "Você é de qual empresa mesmo? Seja direto com o que você quer."
-                        ];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 0 };
-                    }
-                    if (step === 1) {
-                        if (hasAny(text, ["gratuito", "não é venda", "serviço", "demonstração", "prática", "ingresso", "parceria"])) {
-                            state.frustration = 0;
-                            return { reply: "Ah, não é venda direta? Entendi... Mas pra quê eu iria até aí ver isso? Aqui o nosso maior problema é que a lama trava o equipamento todo e o fundo se move.", nextStep: 2 };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Se é pra comprar, a resposta é não. Fica pra próxima.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = [
-                            "Como eu falei, não tenho orçamento pra comprar equipamento novo agora. Qual a proposta?",
-                            "Certo, mas isso tem custo? Porque se tiver, a diretoria vai barrar."
-                        ];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 1 };
-                    }
-                    if (step === 2) {
-                        if (hasAny(text, ["rtk", "fundo móvel", "lama", "segurança", "barco", "remoto", "usv"])) {
-                            return { reply: "Interessante... colocar um barco de controle remoto resolve meu problema de segurança. E o RTK contorna a lama. Certo, me mande o convite no carlos@valeouro.com.", nextStep: 3, done: true };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Isso não me parece resolver o problema da lama no fundo. Deixa quieto. Abraço.", nextStep: -1, done: true, failed: true };
-
-                        let fallbacks = [
-                            "Ainda não vi vantagem pra sair daqui. O que esse equipamento faz com o excesso de lama que o molinete não faz?",
-                            "Cara, se não resolver o problema do fundo móvel e do risco do operador, não me serve."
-                        ];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 2 };
-                    }
-                    return null;
-                }
+    const LEADS = [
+        {
+            id: 'mineradora',
+            type: 'outbound',
+            name: 'Carlos Ribeiro',
+            role: 'Gestor de Seg. de Barragens',
+            company: 'Mineração Vale Ouro',
+            icon: 'fa-helmet-safety',
+            color: '#eab308',
+            bgClass: 'bg-yellow-500/20 text-yellow-500',
+            briefing: {
+                pain: 'Usam molinete antigo. Medo do risco humano (equipe na água) e lama no fundo atrapalha medição. Orçamento curto.',
+                trunfos: 'Fale que o evento é <b>gratuito</b> e <b>não é venda</b>. Mencione <b>segurança, barco remoto (USV)</b> e correção de lama com <b>RTK</b>.',
+                aiNote: 'Personalidade brava e pragmática. Responde curto, desconfia de vendedores. Aborda risco humano se sentir empatia real. Pode desligar se achar que está perdendo tempo.'
             },
-            {
-                id: 'hidreletrica',
-                type: 'outbound',
-                name: 'Fernanda Souza',
-                role: 'Dir. de Operações (PCH)',
-                company: 'EnerRio Energia',
-                icon: 'fa-bolt',
-                color: '#3b82f6',
-                bgClass: 'bg-blue-500/20 text-blue-500',
-                briefing: {
-                    pain: 'Precisam medir a "Vazão Ecológica" para não tomar multas da ANA. Mudar o processo que já fazem hoje parece caro e arriscado.',
-                    trunfos: 'Citar <b>multas/ANA</b> ou <b>vazão ecológica</b>. Mencionar que a medição é <b>rápida/minutos</b> e que a <b>Hidrogest</b> valida os dados na prática.'
-                },
-                greetings: "Fernanda na linha. Pode falar rápido? Estou indo pra uma reunião de diretoria.",
-                logic: function(step, msg, state) {
-                    let text = msg.toLowerCase();
-                    
-                    if (isGreeting(text)) return { reply: "Oi, tudo bem. Pode me adiantar o assunto, por favor?", nextStep: step };
+            systemPrompt: `Você é Carlos Ribeiro, Gestor de Segurança de Barragens da Mineração Vale Ouro. Está no meio de um relatório urgente para a ANA quando um vendedor te liga.
 
-                    if (step === 0) {
-                        if (hasAny(text, ["clean", "evento", "medição", "hidrogest", "vazão", "ecológica", "convite"])) {
-                            state.frustration = 0;
-                            return { reply: "Nós já fazemos medição de vazão ecológica aqui usando réguas e molinete. A equipe já tá acostumada. Por que eu mudaria meu processo?", nextStep: 1 };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Olha, não consigo falar agora se não for urgente. Tchau.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = ["Qual o assunto principal da ligação?", "Não entendi muito bem. É sobre tecnologia?"];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 0 };
-                    }
-                    if (step === 1) {
-                        if (hasAny(text, ["ana", "multa", "rápido", "minutos", "3d", "precisão", "segurança", "órgão"])) {
-                            state.frustration = 0;
-                            return { reply: "Realmente, tomar multa da ANA por dado impreciso é um risco grande. Mas mudar de tecnologia é caro e gera desconfiança. Como eu garanto que isso funciona na prática?", nextStep: 2 };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Meu molinete atende, não vou mudar o processo à toa. Obrigada.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = ["Nosso molinete atende. Qual o grande diferencial pra eu gastar tempo com isso?", "Você tá me dizendo que é melhor, mas em quê exatamente?"];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 1 };
-                    }
-                    if (step === 2) {
-                        if (hasAny(text, ["hidrogest", "prática", "campo", "demonstrar", "validado", "estudo", "ver", "serviço"])) {
-                            return { reply: "Ver a Hidrogest aplicando isso em campo e validando o dado muda de figura. Manda o link no fernanda@enerrio.com.br que vou tentar ir.", nextStep: 3, done: true };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Sem garantias práticas e sem ver rodando, eu não aprovo. Passar bem.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = ["Só na teoria é bonito, quero ver quem assina o laudo e garante o dado.", "Eu precisaria ver isso operando em um caso real antes de considerar."];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 2 };
-                    }
-                    return null;
-                }
+PERSONALIDADE: Direto ao ponto, cético, pragmático. Fala curto. Detesta papo de vendedor. Valoriza segurança acima de tudo. Não gosta de jargão técnico sem necessidade.
+
+SITUAÇÃO: Sua equipe usa molinete antigo há 10 anos. O problema real: (1) risco humano — operadores precisam entrar na água perto da barragem, o que é perigoso; (2) a lama no fundo da represa "trava" o molinete e distorce as leituras; (3) orçamento apertado esse semestre.
+
+OBJEÇÕES NATURAIS (use em sequência conforme a conversa):
+1. "Não tenho verba pra comprar equipamento novo agora."
+2. "Nossa maior dor é a lama e o fundo móvel. O molinete trava toda hora."
+3. "Risco do operador na água é problema sério. Como isso resolve?"
+
+COMO REAGIR:
+- Se o SDR falar de EVENTO GRATUITO ou que NÃO É VENDA → alivie um pouco, pergunte o que é então
+- Se mencionar BARCO REMOTO / USV → demonstre interesse genuíno (operador sai da água!)
+- Se mencionar RTK ou correção de fundo móvel → interesse real, peça mais detalhes
+- Se mencionar as DUAS coisas (segurança + lama) → aceite o convite e forneça seu email: carlos@valeouro.com
+- Se o SDR ficar enrolando por 3+ mensagens sem chegar a ponto → diga "Me manda email" e encerre com done:true,failed:true
+
+REGRAS DE FORMATO:
+- Responda SEMPRE em JSON puro: {"reply": "...", "done": false, "failed": false}
+- "done":true encerra a ligação. "failed":true significa que o cliente desligou sem agendar.
+- Respostas máximo 3 frases. Sem asteriscos, sem markdown.
+- Nunca saia do personagem. Nunca revele que é IA.
+- Se o SDR conseguir o agendamento: done:true, failed:false — mencione o email no reply.`
+        },
+        {
+            id: 'hidreletrica',
+            type: 'outbound',
+            name: 'Fernanda Souza',
+            role: 'Dir. de Operações (PCH)',
+            company: 'EnerRio Energia',
+            icon: 'fa-bolt',
+            color: '#3b82f6',
+            bgClass: 'bg-blue-500/20 text-blue-500',
+            briefing: {
+                pain: 'Precisam medir Vazão Ecológica para evitar multas da ANA. Resistência a mudar processo atual.',
+                trunfos: 'Cite <b>multas/ANA</b> ou <b>vazão ecológica</b>. Mencione que a medição é <b>rápida</b> e que a <b>Hidrogest</b> valida os dados em campo.',
+                aiNote: 'Profissional ocupada, fala rápido. Objeção principal é conformidade regulatória. Cede quando sente que o risco de multa é real e que tem validação técnica.'
             },
-            {
-                id: 'efluentes',
-                type: 'inbound',
-                name: 'Roberto Alves',
-                role: 'Coord. Meio Ambiente',
-                company: 'Ind. Química Beta',
-                icon: 'fa-industry',
-                color: '#10b981',
-                bgClass: 'bg-emerald-500/20 text-emerald-500',
-                briefing: {
-                    pain: 'Preencheu formulário no site. A lâmina de água do efluente tem só 3cm. Estão pagando multa por estimativa errada.',
-                    trunfos: 'Explicar que o <b>FlowTracker</b> mede no <b>raso (2cm)</b>. Focar no <b>serviço/calibração</b> pela Hidrogest.'
-                },
-                greetings: "Boa tarde, aqui é o Roberto da Química Beta. Deixei meus dados no site. Queria saber se vocês resolvem medição de calha de efluentes, porque a água aqui tem só 3cm de fundura.",
-                logic: function(step, msg, state) {
-                    let text = msg.toLowerCase();
-                    
-                    if (isGreeting(text)) return { reply: "Boa tarde! E aí, o que vocês têm de solução pra água rasa?", nextStep: step };
+            systemPrompt: `Você é Fernanda Souza, Diretora de Operações de uma Pequena Central Hidrelétrica (PCH) chamada EnerRio Energia. Uma ligação chega enquanto você vai para reunião de diretoria.
 
-                    if (step === 0) {
-                        if (hasAny(text, ["flowtracker", "raso", "2cm", "2 cm", "centímetro", "precisão", "pontual", "adv"])) {
-                            state.frustration = 0;
-                            return { reply: "Interessante, não sabia que mediam em 2cm. Mas a diretoria congelou compras de equipamentos novos esse ano. Não vão aprovar a compra de um FlowTracker. Como fazemos?", nextStep: 1 };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Se vocês não medem 3cm, não me atende. Desculpe tomar seu tempo.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = ["Mas espera, qual equipamento que faz isso? O ADCP normal não entra em 3cm.", "Não entendi bem. A hélice do molinete nem entra na minha calha. Como vocês medem?"];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 0 };
-                    }
-                    if (step === 1) {
-                        if (hasAny(text, ["serviço", "alugar", "locação", "calibrar", "calibração", "hidrogest", "prestação"])) {
-                            return { reply: "Ah, se for prestação de serviço pra calibrar as calhas com a Hidrogest, aí a diretoria aprova fácil. Me mande os detalhes no roberto@quimica.com que eu agendo a call técnica.", nextStep: 2, done: true };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Já falei que não posso comprar nada. Se não tem outro jeito, encerramos por aqui.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = ["Cara, comprar equipamento agora não rola. Tem outra saída?", "Não adianta ser bom se eu não posso comprar. Vocês prestam algum tipo de serviço?"];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 1 };
-                    }
-                    return null;
-                }
+PERSONALIDADE: Executiva ocupada. Fala rápido e direto. Não gosta de reuniões desnecessárias. Toma decisões baseadas em risco financeiro e regulatório, não em tecnologia por si só.
+
+SITUAÇÃO: A PCH precisa medir "Vazão Ecológica" e reportar à ANA (Agência Nacional de Águas). Hoje fazem isso com réguas e molinete — método antigo mas "funciona". O risco real: dados imprecisos podem gerar MULTAS pesadas da ANA. Você não quer mudar o processo por medo de errar na transição.
+
+OBJEÇÕES NATURAIS:
+1. "Já fazemos medição de vazão com molinete. Por que eu mudaria meu processo?"
+2. "Mudar tecnologia é caro e gera desconfiança interna. Como garantir que funciona?"
+3. "Quero ver isso operando em campo, não só uma promessa."
+
+COMO REAGIR:
+- Se mencionar MULTAS DA ANA ou RISCO REGULATÓRIO → admita que isso é uma preocupação real
+- Se mencionar RAPIDEZ (minutos vs horas) → interesse moderado
+- Se mencionar HIDROGEST validando em campo → interesse alto, pergunta sobre garantias
+- Se combinar RISCO REGULATÓRIO + HIDROGEST EM CAMPO → aceite o convite, email: fernanda@enerrio.com.br
+- Se ficar 3+ mensagens sem abordar conformidade regulatória → diga que não tem tempo e encerre
+
+REGRAS DE FORMATO:
+- Responda SEMPRE em JSON puro: {"reply": "...", "done": false, "failed": false}
+- Respostas máximo 3 frases. Tom direto e profissional.
+- "done":true + "failed":false = agendamento. "done":true + "failed":true = desistiu.
+- Nunca revele que é IA.`
+        },
+        {
+            id: 'efluentes',
+            type: 'inbound',
+            name: 'Roberto Alves',
+            role: 'Coord. Meio Ambiente',
+            company: 'Ind. Química Beta',
+            icon: 'fa-industry',
+            color: '#10b981',
+            bgClass: 'bg-emerald-500/20 text-emerald-500',
+            briefing: {
+                pain: 'Preencheu formulário no site. Água do efluente tem só 3cm de lâmina. Pagam multas por estimativa errada.',
+                trunfos: 'Explique que o <b>FlowTracker</b> mede no <b>raso (2cm)</b>. Foque no <b>serviço/calibração</b> pela Hidrogest — não venda, preste serviço.',
+                aiNote: 'Lead quente que ligou por conta própria. Problema técnico muito específico. Bloqueio em compra de equipamento, mas aberto a serviço terceirizado.'
             },
-            {
-                id: 'engenheira',
-                type: 'inbound',
-                name: 'Marina Silva',
-                role: 'Eng. Hidróloga de Campo',
-                company: 'Águas Estaduais SA',
-                icon: 'fa-water',
-                color: '#8b5cf6',
-                bgClass: 'bg-violet-500/20 text-violet-500',
-                briefing: {
-                    pain: 'Entrou em contato via LinkedIn. Sofre no sol com molinete travando no mato. Precisa convencer o chefe pão-duro.',
-                    trunfos: 'Citar que o <b>M9/ADCP</b> não tem <b>partes móveis</b>. Convidar para o evento <b>gratuito</b> e falar para levar o <b>chefe/diretor</b>.'
-                },
-                greetings: "Oi, aqui é a Marina. Vi um post de vocês no LinkedIn sobre medição rápida. Meu molinete vive encravando no mato, não aguento mais. Como funciona a tecnologia de vocês?",
-                logic: function(step, msg, state) {
-                    let text = msg.toLowerCase();
-                    if (isGreeting(text)) return { reply: "Oii! Então, me explica como resolvo esse problema do mato travando a hélice.", nextStep: step };
+            systemPrompt: `Você é Roberto Alves, Coordenador de Meio Ambiente da Indústria Química Beta. Você mesmo ligou para a Clean/Hidrogest depois de preencher um formulário no site deles.
 
-                    if (step === 0) {
-                        if (hasAny(text, ["adcp", "m9", "móveis", "acústico", "sontek", "som", "trava", "hélice"])) {
-                            state.frustration = 0;
-                            return { reply: "Sem peças móveis? Isso seria um sonho, pouparia minha vida no sol. Mas quem assina o cheque é meu diretor e ele é muito resistente a tecnologia nova. Como eu convenço ele?", nextStep: 1 };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Acho que isso não vai dar certo na nossa operação. Obrigada de qualquer forma.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = ["Não peguei a parte técnica. Por que ele não trava no mato igual o molinete?", "Mas se tem hélice, vai travar do mesmo jeito. Como ele é diferente?"];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 0 };
-                    }
-                    if (step === 1) {
-                        if (hasAny(text, ["chefe", "diretor", "evento", "convite", "gratuito", "prática", "levar", "ir junto"])) {
-                            return { reply: "Gostei da ideia! Um evento gratuito na prática... Vou convencer ele a ir comigo pra ver funcionando com os próprios olhos. Manda o convite no marina@aguas.gov.", nextStep: 2, done: true };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "É, sem um caso real pra mostrar pra ele, não vou conseguir orçamento. Deixa pra lá.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = ["Ainda não sei como justificar isso pro meu diretor só com um folder. Ele precisa de provas.", "Ele só acredita vendo. Falar no ouvido dele não vai adiantar."];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 1 };
-                    }
-                    return null;
-                }
+PERSONALIDADE: Técnico, analítico, pragmático. Já sabe o que precisa — uma solução para medir efluente com apenas 3cm de lâmina d'água. Não tem paciência para vendas genéricas.
+
+SITUAÇÃO: A calha de efluente da sua fábrica tem apenas 3cm de profundidade. O molinete normal não funciona (hélice não entra). Vocês pagam multas por usar estimativas no lugar de medições reais. A diretoria congelou compras de equipamentos novos este ano.
+
+PERGUNTAS E OBJEÇÕES:
+1. Quer saber imediatamente: "Vocês medem em apenas 3cm de profundidade?"
+2. Se sim: "Mas a diretoria não aprova compra de equipamento novo. Tem outra forma?"
+3. Se oferecer serviço/locação: aceita e pede detalhes para fechar
+
+COMO REAGIR:
+- Se mencionar FLOWTRACKER ou medição em 2cm/3cm → alívio real, mas levanta objeção de compra
+- Se mencionar SERVIÇO, LOCAÇÃO, CALIBRAÇÃO, PRESTAÇÃO ou HIDROGEST → aceitação imediata
+- Se não souber responder sobre água rasa → educadamente encerre (done:true, failed:true)
+- Se tentar vender equipamento → explique que não pode comprar, redirecione para serviço
+
+REGRAS:
+- Responda SEMPRE em JSON puro: {"reply": "...", "done": false, "failed": false}
+- Tom técnico e direto. Máximo 3 frases.
+- Agendamento: email roberto@quimica.com
+- Nunca revele que é IA.`
+        },
+        {
+            id: 'engenheira',
+            type: 'inbound',
+            name: 'Marina Silva',
+            role: 'Eng. Hidróloga de Campo',
+            company: 'Águas Estaduais SA',
+            icon: 'fa-water',
+            color: '#8b5cf6',
+            bgClass: 'bg-violet-500/20 text-violet-500',
+            briefing: {
+                pain: 'Entrou pelo LinkedIn. Sofre com molinete travando no campo. Precisa convencer chefe conservador.',
+                trunfos: 'Cite que o <b>M9/ADCP</b> não tem <b>partes móveis</b>. Convide para evento <b>gratuito</b> e sugira trazer o <b>chefe/diretor</b>.',
+                aiNote: 'Entusiasta de tecnologia, animada, parceira. Tem vontade mas sem poder de compra. A chave é ajudá-la a vender internamente para o chefe.'
             },
-            {
-                id: 'consultoria',
-                type: 'outbound',
-                name: 'Ricardo Gomes',
-                role: 'Sócio-Diretor',
-                company: 'EcoData Consultoria',
-                icon: 'fa-leaf',
-                color: '#f97316',
-                bgClass: 'bg-orange-500/20 text-orange-500',
-                briefing: {
-                    pain: 'Perde licitações porque não tem ADCP. Mas comprar um M9 é muito caro para o caixa atual dele.',
-                    trunfos: 'Focar forte no modelo de negócio: <b>aluguel/locação</b> com a Clean e <b>treinamento/parceria</b> com a Hidrogest.'
-                },
-                greetings: "Consultoria EcoData, Ricardo falando. Boa tarde.",
-                logic: function(step, msg, state) {
-                    let text = msg.toLowerCase();
-                    if (isGreeting(text)) return { reply: "Boa tarde. Em que posso ajudar a sua empresa?", nextStep: step };
+            systemPrompt: `Você é Marina Silva, Engenheira Hidróloga de Campo da Águas Estaduais SA. Você entrou em contato depois de ver um post no LinkedIn sobre medição hidrológica sem partes móveis.
 
-                    if (step === 0) {
-                        if (hasAny(text, ["adcp", "evento", "tecnologia", "licitação", "m9", "sontek"])) {
-                            state.frustration = 0;
-                            return { reply: "Eu conheço os ADCPs, são fantásticos. Mas custam centenas de milhares de reais. Minha consultoria é pequena, não tenho fluxo de caixa pra um investimento desse porte.", nextStep: 1 };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Não tenho interesse em propostas fora da minha realidade financeira. Bom dia.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = ["Sim, trabalhamos com laudos hídricos. Qual a pauta?", "Estou escutando. Qual a tecnologia que vocês oferecem?"];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 0 };
-                    }
-                    if (step === 1) {
-                        if (hasAny(text, ["alugar", "locação", "serviço", "parceria", "aluguel"])) {
-                            state.frustration = 0;
-                            return { reply: "Locação me interessa muito! Assim consigo ganhar as licitações grandes sem descapitalizar. Mas tem um problema: minha equipe só pilotou molinete, nunca mexemos num M9.", nextStep: 2 };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Comprar equipamento está fora de cogitação. Abraço.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = ["Se for para comprar a prazo, ainda fica pesado pro meu caixa.", "Venda direta pra mim não serve hoje. Tem outro modelo de negócio?"];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 1 };
-                    }
-                    if (step === 2) {
-                        if (hasAny(text, ["hidrogest", "treinamento", "evento", "prática", "aprender", "ensinar", "capacitar"])) {
-                            return { reply: "A Hidrogest vai dar treinamento prático no evento? Sensacional. É isso que eu precisava. Manda a inscrição para contato@ecodata.com.br, estarei lá com certeza.", nextStep: 3, done: true };
-                        }
-                        state.frustration++;
-                        if(state.frustration >= 3) return { reply: "Alugar e quebrar o equipamento por inexperiência é prejuízo dobrado. Vou deixar passar.", nextStep: -1, done: true, failed: true };
-                        
-                        let fallbacks = ["Alugar eu até alugo, mas se quebrar na mão de operador inexperiente, tô frito. Como a gente capacita o pessoal?", "Vocês ensinam a usar o equipamento se eu fechar a locação?"];
-                        return { reply: fallbacks[state.frustration - 1], nextStep: 2 };
-                    }
-                    return null;
-                }
-            }
-        ];
+PERSONALIDADE: Jovem, animada, curiosa tecnicamente. Sofre no campo com equipamento antigo. Quer modernizar mas não tem poder de compra — o chefe dela é conservador e controla o orçamento.
 
-        let currentTab = 'outbound';
-        let currentLead = null;
-        let chatStep = 0;
-        let callTimerInterval = null;
-        let callSeconds = 0;
-        let leadState = { frustration: 0 }; // Estado dinâmico do cliente na call
+SITUAÇÃO: Trabalha com molinete antigo que vive travando no mato, em folhas, gravetos. Passa horas no sol "destravando" o equipamento. Adoraria uma alternativa, mas o Diretor dela é "do tipo que não aprova tecnologia sem ver funcionando".
 
-        const viewDashboard = document.getElementById('view-dashboard');
-        const viewChat = document.getElementById('view-chat');
-        const leadsGrid = document.getElementById('leads-grid');
-        const chatMessages = document.getElementById('chat-messages');
-        const chatInput = document.getElementById('chat-input');
-        const chatForm = document.getElementById('chat-form');
-        const timerDisplay = document.getElementById('call-timer');
+OBJEÇÕES:
+1. "Por que ele não trava igual o molinete? Tem hélice também?"
+2. "Meu diretor é muito resistente a tecnologia nova. Como convenço ele?"
+3. "Ele só acredita vendo com os próprios olhos. Tem como mostrar isso?"
 
-        function switchTab(tab) {
-            currentTab = tab;
-            const btnOut = document.getElementById('tab-outbound');
-            const btnIn = document.getElementById('tab-inbound');
-            
-            if (tab === 'outbound') {
-                btnOut.className = 'px-6 py-2.5 rounded-full font-bold transition-all bg-clean-main text-white shadow-lg shadow-clean-main/20 border border-clean-main';
-                btnIn.className = 'px-6 py-2.5 rounded-full font-bold transition-all bg-darkcard text-slate-400 border border-slate-700 hover:text-white hover:border-slate-500';
-            } else {
-                btnIn.className = 'px-6 py-2.5 rounded-full font-bold transition-all bg-hidro-main text-white shadow-lg shadow-hidro-main/20 border border-hidro-main';
-                btnOut.className = 'px-6 py-2.5 rounded-full font-bold transition-all bg-darkcard text-slate-400 border border-slate-700 hover:text-white hover:border-slate-500';
-            }
-            renderDashboard();
+COMO REAGIR:
+- Se explicar que ADCP/M9 usa acústica e NÃO TEM PARTES MÓVEIS → animação, mas levanta objeção do chefe
+- Se mencionar EVENTO GRATUITO ou DEMO PRÁTICA → muito interessada
+- Se sugerir LEVAR O CHEFE/DIRETOR ao evento → aceita imediatamente (ela ama a ideia!)
+- Se não conseguir resolver a questão do chefe → desiste por falta de caminho
+
+REGRAS:
+- Responda SEMPRE em JSON puro: {"reply": "...", "done": false, "failed": false}
+- Tom animado e informal. Pode usar "!". Máximo 3 frases.
+- Agendamento: email marina@aguas.gov
+- Nunca revele que é IA.`
+        },
+        {
+            id: 'consultoria',
+            type: 'outbound',
+            name: 'Ricardo Gomes',
+            role: 'Sócio-Diretor',
+            company: 'EcoData Consultoria',
+            icon: 'fa-leaf',
+            color: '#f97316',
+            bgClass: 'bg-orange-500/20 text-orange-500',
+            briefing: {
+                pain: 'Perde licitações por não ter ADCP. Mas comprar M9 é muito caro para o fluxo de caixa.',
+                trunfos: 'Foque em <b>aluguel/locação</b> com a Clean e <b>treinamento prático</b> com a Hidrogest no evento.',
+                aiNote: 'Empresário estratégico. Entende o produto mas tem restrição financeira real. Responde a modelo de negócio criativo, não a vendas tradicionais.'
+            },
+            systemPrompt: `Você é Ricardo Gomes, Sócio-Diretor da EcoData Consultoria, empresa pequena de laudos hídricos ambientais. Uma ligação chega para seu celular.
+
+PERSONALIDADE: Empresário experiente, calculista, fala como quem pesa cada real. Conhece o mercado de equipamentos hidrológicos. Perdeu licitações grandes por não ter ADCP — isso dói.
+
+SITUAÇÃO: Sabe que ADCPs (como o M9 da SonTek) são superiores ao molinete. O problema: custo de R$400-600k está fora do seu fluxo de caixa atual. Além disso, sua equipe nunca operou um M9 — risco de quebrar equipamento alugado por inexperiência.
+
+OBJEÇÕES EM SEQUÊNCIA:
+1. "ADCP é caro demais pra minha consultoria pequena."
+2. "Locação me interessa, mas minha equipe nunca operou M9. Como garante que não vão quebrar?"
+3. "Treinamento prático resolve isso. Quando e onde?"
+
+COMO REAGIR:
+- Se mencionar ADCP/M9/licitação → admita interesse mas levante custo imediatamente
+- Se mencionar LOCAÇÃO/ALUGUEL/SERVIÇO → interesse real, mas levanta preocupação com treinamento
+- Se mencionar HIDROGEST + TREINAMENTO PRÁTICO/EVENTO → aceite o evento imediatamente
+- Se tentar só vender sem modelo alternativo → diga que não tem caixa e encerre
+
+REGRAS:
+- Responda SEMPRE em JSON puro: {"reply": "...", "done": false, "failed": false}
+- Tom calculista e de negócios. Máximo 3 frases.
+- Agendamento: email contato@ecodata.com.br
+- Nunca revele que é IA.`
         }
+    ];
 
-        function renderDashboard() {
-            leadsGrid.innerHTML = '';
-            const filteredLeads = LEADS.filter(l => l.type === currentTab);
-            
-            if (filteredLeads.length === 0) {
-                leadsGrid.innerHTML = '<p class="text-slate-500 col-span-full text-center py-10">Nenhum contato disponível nesta categoria.</p>';
-                return;
-            }
+    let currentTab = 'outbound';
+    let currentLead = null;
+    let callTimerInterval = null;
+    let callSeconds = 0;
+    let conversationHistory = [];
+    let callEnded = false;
 
-            filteredLeads.forEach(lead => {
-                const isOutbound = lead.type === 'outbound';
-                const btnClass = isOutbound 
-                    ? 'bg-slate-800 text-white hover:bg-clean-main border border-transparent' 
-                    : 'bg-hidro-main/10 text-hidro-main border border-hidro-main/30 hover:bg-hidro-main hover:text-white';
-                const btnText = isOutbound 
-                    ? '<i class="fa-solid fa-phone mr-2"></i> Ligar para Lead' 
-                    : '<i class="fa-solid fa-phone-volume mr-2 animate-pulse"></i> Atender Ligação';
-                const badgeClass = isOutbound ? 'bg-clean-main/10 text-clean-main border-clean-main/20' : 'bg-hidro-main/10 text-hidro-main border-hidro-main/20';
+    const viewDashboard = document.getElementById('view-dashboard');
+    const viewChat = document.getElementById('view-chat');
+    const leadsGrid = document.getElementById('leads-grid');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const chatForm = document.getElementById('chat-form');
+    const timerDisplay = document.getElementById('call-timer');
 
-                const card = document.createElement('div');
-                card.className = 'lead-card bg-darkcard border border-slate-700 rounded-2xl p-6 flex flex-col items-center text-center relative';
-                card.onclick = () => selectLead(lead.id);
-                card.innerHTML = `
-                    <div class="absolute top-4 right-4 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${badgeClass}">
-                        ${isOutbound ? 'Outbound' : 'Inbound'}
-                    </div>
-                    <div class="w-20 h-20 rounded-full flex items-center justify-center text-3xl mb-4 mt-2 ${lead.bgClass}">
-                        <i class="fa-solid ${lead.icon}"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-1">${lead.name}</h3>
-                    <p class="text-sm font-semibold mb-3" style="color:${lead.color}">${lead.role}</p>
-                    <p class="text-xs text-slate-400 uppercase tracking-wider mb-6"><i class="fa-solid fa-building mr-1"></i> ${lead.company}</p>
-                    <button class="mt-auto w-full py-2.5 rounded-lg font-semibold text-sm transition-all ${btnClass}">
-                        ${btnText}
-                    </button>
-                `;
-                leadsGrid.appendChild(card);
-            });
+    function switchTab(tab) {
+        currentTab = tab;
+        const btnOut = document.getElementById('tab-outbound');
+        const btnIn = document.getElementById('tab-inbound');
+        if (tab === 'outbound') {
+            btnOut.className = 'px-6 py-2.5 rounded-full font-bold transition-all bg-clean-main text-white shadow-lg shadow-clean-main/20 border border-clean-main';
+            btnIn.className = 'px-6 py-2.5 rounded-full font-bold transition-all bg-darkcard text-slate-400 border border-slate-700 hover:text-white hover:border-slate-500';
+        } else {
+            btnIn.className = 'px-6 py-2.5 rounded-full font-bold transition-all bg-hidro-main text-white shadow-lg shadow-hidro-main/20 border border-hidro-main';
+            btnOut.className = 'px-6 py-2.5 rounded-full font-bold transition-all bg-darkcard text-slate-400 border border-slate-700 hover:text-white hover:border-slate-500';
         }
+        renderDashboard();
+    }
 
-        function showDashboard() {
-            clearInterval(callTimerInterval);
-            viewChat.classList.add('hidden');
-            viewDashboard.classList.remove('hidden');
-            currentLead = null;
-        }
-
-        function selectLead(leadId) {
-            currentLead = LEADS.find(l => l.id === leadId);
-            if(!currentLead) return;
-
-            document.getElementById('briefing-avatar').className = `w-14 h-14 rounded-full flex items-center justify-center text-2xl shrink-0 ${currentLead.bgClass}`;
-            document.getElementById('briefing-avatar').innerHTML = `<i class="fa-solid ${currentLead.icon}"></i>`;
-            document.getElementById('briefing-name').textContent = currentLead.name;
-            document.getElementById('briefing-role').textContent = currentLead.role;
-            document.getElementById('briefing-company').textContent = currentLead.company;
-            document.getElementById('briefing-company').style.color = currentLead.color;
-            document.getElementById('briefing-pain').innerHTML = currentLead.briefing.pain;
-            document.getElementById('briefing-trunfos').innerHTML = currentLead.briefing.trunfos;
-
-            document.getElementById('chat-header-avatar').className = `w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${currentLead.bgClass}`;
-            document.getElementById('chat-header-avatar').innerHTML = `<i class="fa-solid ${currentLead.icon}"></i>`;
-            document.getElementById('chat-header-name').textContent = `${currentLead.name} - ${currentLead.company}`;
-            
-            document.documentElement.style.setProperty('--lead-color', currentLead.color);
-
-            viewDashboard.classList.add('hidden');
-            viewChat.classList.remove('hidden');
-            
-            resetCall();
-        }
-
-        function startCallTimer() {
-            clearInterval(callTimerInterval);
-            callSeconds = 0;
-            timerDisplay.textContent = "00:00";
-            callTimerInterval = setInterval(() => {
-                callSeconds++;
-                const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
-                const secs = String(callSeconds % 60).padStart(2, '0');
-                timerDisplay.textContent = `${mins}:${secs}`;
-            }, 1000);
-        }
-
-        function scrollToBottom() {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function addMessage(text, sender) {
-            const msgDiv = document.createElement('div');
-            const isBot = sender === 'bot';
-            
-            msgDiv.className = `flex gap-3 w-full ${isBot ? 'slide-in-left' : 'slide-in flex-row-reverse'}`;
-            
-            const avatar = document.createElement('div');
-            avatar.className = `w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${isBot ? currentLead.bgClass : 'bg-clean-main/20 text-clean-main'}`;
-            avatar.innerHTML = isBot ? `<i class="fa-solid ${currentLead.icon} text-xs"></i>` : '<i class="fa-solid fa-user-tie text-xs"></i>';
-            
-            const bubble = document.createElement('div');
-            bubble.className = `p-3.5 max-w-[85%] text-sm text-white ${isBot ? 'chat-bubble-bot' : 'chat-bubble-user'} rounded-2xl shadow-sm`;
-            bubble.innerHTML = text;
-
-            msgDiv.appendChild(avatar);
-            msgDiv.appendChild(bubble);
-            chatMessages.appendChild(msgDiv);
-            scrollToBottom();
-        }
-
-        function showTypingIndicator() {
-            const typingDiv = document.createElement('div');
-            typingDiv.id = 'typing-indicator';
-            typingDiv.className = `flex gap-3 w-full slide-in-left`;
-            
-            const avatar = document.createElement('div');
-            avatar.className = `w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${currentLead.bgClass}`;
-            avatar.innerHTML = `<i class="fa-solid ${currentLead.icon} text-xs"></i>`;
-            
-            const bubble = document.createElement('div');
-            bubble.className = `px-4 py-3 bg-slate-800 border border-slate-700 rounded-2xl chat-bubble-bot flex items-center h-[46px]`;
-            bubble.innerHTML = `
-                <svg height="8" width="32" class="opacity-70">
-                    <circle class="typing-dot" cx="4" cy="4" r="3" />
-                    <circle class="typing-dot" cx="16" cy="4" r="3" />
-                    <circle class="typing-dot" cx="28" cy="4" r="3" />
-                </svg>
+    function renderDashboard() {
+        leadsGrid.innerHTML = '';
+        const filtered = LEADS.filter(l => l.type === currentTab);
+        filtered.forEach(lead => {
+            const isOut = lead.type === 'outbound';
+            const btnClass = isOut
+                ? 'bg-slate-800 text-white hover:bg-clean-main border border-transparent'
+                : 'bg-hidro-main/10 text-hidro-main border border-hidro-main/30 hover:bg-hidro-main hover:text-white';
+            const btnText = isOut
+                ? '<i class="fa-solid fa-phone mr-2"></i> Ligar para Lead'
+                : '<i class="fa-solid fa-phone-volume mr-2 animate-pulse"></i> Atender Ligação';
+            const badgeClass = isOut ? 'bg-clean-main/10 text-clean-main border-clean-main/20' : 'bg-hidro-main/10 text-hidro-main border-hidro-main/20';
+            const card = document.createElement('div');
+            card.className = 'lead-card bg-darkcard border border-slate-700 rounded-2xl p-6 flex flex-col items-center text-center relative';
+            card.onclick = () => selectLead(lead.id);
+            card.innerHTML = `
+                <div class="absolute top-4 right-4 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${badgeClass}">${isOut ? 'Outbound' : 'Inbound'}</div>
+                <div class="w-20 h-20 rounded-full flex items-center justify-center text-3xl mb-4 mt-2 ${lead.bgClass}"><i class="fa-solid ${lead.icon}"></i></div>
+                <h3 class="text-xl font-bold text-white mb-1">${lead.name}</h3>
+                <p class="text-sm font-semibold mb-3" style="color:${lead.color}">${lead.role}</p>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-6"><i class="fa-solid fa-building mr-1"></i> ${lead.company}</p>
+                <button class="mt-auto w-full py-2.5 rounded-lg font-semibold text-sm transition-all ${btnClass}">${btnText}</button>
             `;
-            
-            typingDiv.appendChild(avatar);
-            typingDiv.appendChild(bubble);
-            chatMessages.appendChild(typingDiv);
-            scrollToBottom();
+            leadsGrid.appendChild(card);
+        });
+    }
+
+    function showDashboard() {
+        clearInterval(callTimerInterval);
+        viewChat.classList.add('hidden');
+        viewDashboard.classList.remove('hidden');
+        currentLead = null;
+        conversationHistory = [];
+        callEnded = false;
+    }
+
+    function selectLead(leadId) {
+        currentLead = LEADS.find(l => l.id === leadId);
+        if (!currentLead) return;
+
+        document.getElementById('briefing-avatar').className = `w-14 h-14 rounded-full flex items-center justify-center text-2xl shrink-0 ${currentLead.bgClass}`;
+        document.getElementById('briefing-avatar').innerHTML = `<i class="fa-solid ${currentLead.icon}"></i>`;
+        document.getElementById('briefing-name').textContent = currentLead.name;
+        document.getElementById('briefing-role').textContent = currentLead.role;
+        document.getElementById('briefing-company').textContent = currentLead.company;
+        document.getElementById('briefing-company').style.color = currentLead.color;
+        document.getElementById('briefing-pain').innerHTML = currentLead.briefing.pain;
+        document.getElementById('briefing-trunfos').innerHTML = currentLead.briefing.trunfos;
+        document.getElementById('briefing-ai-note').textContent = currentLead.briefing.aiNote;
+
+        document.getElementById('chat-header-avatar').className = `w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${currentLead.bgClass}`;
+        document.getElementById('chat-header-avatar').innerHTML = `<i class="fa-solid ${currentLead.icon}"></i>`;
+        document.getElementById('chat-header-name').textContent = `${currentLead.name} — ${currentLead.company}`;
+
+        document.getElementById('feedback-panel').classList.add('hidden');
+
+        viewDashboard.classList.add('hidden');
+        viewChat.classList.remove('hidden');
+        resetCall();
+    }
+
+    function startCallTimer() {
+        clearInterval(callTimerInterval);
+        callSeconds = 0;
+        timerDisplay.textContent = "00:00";
+        callTimerInterval = setInterval(() => {
+            callSeconds++;
+            const m = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+            const s = String(callSeconds % 60).padStart(2, '0');
+            timerDisplay.textContent = `${m}:${s}`;
+        }, 1000);
+    }
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addMessage(text, sender) {
+        const msgDiv = document.createElement('div');
+        const isBot = sender === 'bot';
+        msgDiv.className = `flex gap-3 w-full ${isBot ? 'slide-in-left' : 'slide-in flex-row-reverse'}`;
+        const avatar = document.createElement('div');
+        avatar.className = `w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${isBot ? currentLead.bgClass : 'bg-clean-main/20 text-clean-main'}`;
+        avatar.innerHTML = isBot ? `<i class="fa-solid ${currentLead.icon} text-xs"></i>` : '<i class="fa-solid fa-user-tie text-xs"></i>';
+        const bubble = document.createElement('div');
+        bubble.className = `p-3.5 max-w-[85%] text-sm text-white ${isBot ? 'chat-bubble-bot' : 'chat-bubble-user'} rounded-2xl shadow-sm`;
+        bubble.innerHTML = text;
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(bubble);
+        chatMessages.appendChild(msgDiv);
+        scrollToBottom();
+        return bubble;
+    }
+
+    function addStreamingMessage() {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `flex gap-3 w-full slide-in-left`;
+        const avatar = document.createElement('div');
+        avatar.className = `w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${currentLead.bgClass}`;
+        avatar.innerHTML = `<i class="fa-solid ${currentLead.icon} text-xs"></i>`;
+        const bubble = document.createElement('div');
+        bubble.className = `p-3.5 max-w-[85%] text-sm text-white chat-bubble-bot rounded-2xl shadow-sm stream-cursor`;
+        bubble.textContent = '';
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(bubble);
+        chatMessages.appendChild(msgDiv);
+        scrollToBottom();
+        return { msgDiv, bubble };
+    }
+
+    function showTypingIndicator() {
+        const d = document.createElement('div');
+        d.id = 'typing-indicator';
+        d.className = `flex gap-3 w-full slide-in-left`;
+        const av = document.createElement('div');
+        av.className = `w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${currentLead.bgClass}`;
+        av.innerHTML = `<i class="fa-solid ${currentLead.icon} text-xs"></i>`;
+        const bub = document.createElement('div');
+        bub.className = `px-4 py-3 bg-slate-800 border border-slate-700 rounded-2xl chat-bubble-bot flex items-center h-[46px]`;
+        bub.innerHTML = `<svg height="8" width="32" class="opacity-70"><circle class="typing-dot" cx="4" cy="4" r="3"/><circle class="typing-dot" cx="16" cy="4" r="3"/><circle class="typing-dot" cx="28" cy="4" r="3"/></svg>`;
+        d.appendChild(av); d.appendChild(bub);
+        chatMessages.appendChild(d);
+        scrollToBottom();
+    }
+
+    function setInputEnabled(enabled) {
+        chatInput.disabled = !enabled;
+        document.getElementById('chat-send-btn').disabled = !enabled;
+        if (enabled) chatInput.focus();
+    }
+
+    async function callClaudeAPI(userMessage) {
+        conversationHistory.push({ role: "user", content: userMessage });
+
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 1000,
+                system: currentLead.systemPrompt,
+                messages: conversationHistory
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
         }
 
-        function processBotResponse(userMsg) {
-            // Passa o estado de frustração pra lógica do lead
-            const result = currentLead.logic(chatStep, userMsg, leadState);
-            
-            let replyText = "";
-            let isDone = false;
-            let isFailed = false;
+        const data = await response.json();
+        const rawText = data.content.map(c => c.text || '').join('');
 
-            if (result) {
-                replyText = result.reply;
-                chatStep = result.nextStep;
-                isDone = result.done || false;
-                isFailed = result.failed || false;
-            } else {
-                // Fallback genérico se tudo falhar incrivelmente
-                const fallbacks = [
-                    "Não entendi muito bem. Pode explicar melhor?",
-                    "Como assim? Seja mais direto, por favor."
-                ];
-                replyText = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-                leadState.frustration++;
-            }
+        let parsed;
+        try {
+            const cleaned = rawText.replace(/```json|```/g, '').trim();
+            parsed = JSON.parse(cleaned);
+        } catch {
+            parsed = { reply: rawText, done: false, failed: false };
+        }
 
-            addMessage(replyText, 'bot');
+        conversationHistory.push({ role: "assistant", content: rawText });
+        return parsed;
+    }
 
-            if (isDone) {
+    async function requestFeedback() {
+        const transcript = conversationHistory
+            .map(m => `${m.role === 'user' ? 'SDR' : currentLead.name}: ${m.content}`)
+            .join('\n');
+
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 1000,
+                system: `Você é um coach de vendas B2B especialista em SDR. Analise brevemente a ligação de prospecção e dê feedback em 3 pontos: o que funcionou, o que falhou e uma dica principal. Seja direto e prático. Responda em JSON: {"pontos": [{"tipo": "acerto|erro|dica", "texto": "..."}]}. Máximo 2 frases por ponto. Sem markdown.`,
+                messages: [{ role: "user", content: `Analise esta ligação:\n\n${transcript}` }]
+            })
+        });
+
+        const data = await response.json();
+        const raw = data.content.map(c => c.text || '').join('');
+        try {
+            const cleaned = raw.replace(/```json|```/g, '').trim();
+            return JSON.parse(cleaned);
+        } catch {
+            return null;
+        }
+    }
+
+    function showFeedbackPanel(feedback) {
+        if (!feedback || !feedback.pontos) return;
+        const panel = document.getElementById('feedback-panel');
+        const content = document.getElementById('feedback-content');
+        const icons = { acerto: '✅', erro: '❌', dica: '💡' };
+        content.innerHTML = feedback.pontos.map(p =>
+            `<div class="flex gap-2"><span>${icons[p.tipo] || '•'}</span><span>${p.texto}</span></div>`
+        ).join('');
+        panel.classList.remove('hidden');
+    }
+
+    async function processBotResponse(userMsg) {
+        setInputEnabled(false);
+        const typingEl = document.getElementById('typing-indicator');
+
+        try {
+            const result = await callClaudeAPI(userMsg);
+
+            if (typingEl) typingEl.remove();
+            addMessage(result.reply, 'bot');
+
+            if (result.done) {
+                callEnded = true;
                 clearInterval(callTimerInterval);
-                chatInput.disabled = true;
-                document.getElementById('chat-send-btn').disabled = true;
-                
-                setTimeout(() => {
+                setInputEnabled(false);
+
+                setTimeout(async () => {
                     const statusDiv = document.createElement('div');
                     statusDiv.className = 'w-full text-center py-4 fade-up';
-                    
-                    if (isFailed) {
+                    if (result.failed) {
                         chatInput.placeholder = "O cliente desligou. Ligação perdida.";
                         statusDiv.innerHTML = `<span class="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-sm font-bold tracking-wide"><i class="fa-solid fa-phone-slash"></i> CLIENTE DESLIGOU NA SUA CARA</span>`;
                     } else {
-                        chatInput.placeholder = "Ligação concluída com sucesso! Agendamento garantido.";
+                        chatInput.placeholder = "Agendamento concluído!";
                         statusDiv.innerHTML = `<span class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-sm font-bold tracking-wide"><i class="fa-solid fa-check-double"></i> AGENDAMENTO CONCLUÍDO</span>`;
                     }
-                    
                     chatMessages.appendChild(statusDiv);
                     scrollToBottom();
+
+                    // Request AI feedback
+                    const feedbackData = await requestFeedback();
+                    showFeedbackPanel(feedbackData);
                 }, 800);
             } else {
-                chatInput.disabled = false;
-                document.getElementById('chat-send-btn').disabled = false;
-                chatInput.focus();
+                setInputEnabled(true);
             }
+        } catch (err) {
+            if (typingEl) typingEl.remove();
+            addMessage(`<i class="fa-solid fa-exclamation-triangle text-yellow-400 mr-2"></i>Erro de conexão com a IA. Tente novamente.`, 'bot');
+            setInputEnabled(true);
+            console.error(err);
+        }
+    }
+
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (callEnded) return;
+        const text = chatInput.value.trim();
+        if (!text) return;
+        addMessage(text, 'user');
+        chatInput.value = '';
+        setInputEnabled(false);
+        setTimeout(() => {
+            showTypingIndicator();
+        }, 200);
+        await processBotResponse(text);
+    });
+
+    async function resetCall() {
+        chatMessages.innerHTML = '';
+        conversationHistory = [];
+        callEnded = false;
+        setInputEnabled(true);
+        chatInput.value = '';
+        chatInput.placeholder = "Digite sua resposta e pressione Enter...";
+        document.getElementById('feedback-panel').classList.add('hidden');
+        startCallTimer();
+
+        // Get opening message from AI
+        setInputEnabled(false);
+        showTypingIndicator();
+
+        try {
+            const openingSystemPrompt = currentLead.systemPrompt + `\n\nEsta é a primeira mensagem da ligação. Você recebe a chamada. Dê sua saudação de atendimento como ${currentLead.name}. Responda em JSON: {"reply": "...", "done": false, "failed": false}`;
+
+            const response = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-20250514",
+                    max_tokens: 300,
+                    system: openingSystemPrompt,
+                    messages: [{ role: "user", content: "[ligação conectada]" }]
+                })
+            });
+
+            const data = await response.json();
+            const raw = data.content.map(c => c.text || '').join('');
+            let parsed;
+            try {
+                parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+            } catch {
+                parsed = { reply: raw };
+            }
+
+            conversationHistory.push({ role: "user", content: "[ligação conectada]" });
+            conversationHistory.push({ role: "assistant", content: raw });
+
+            const typingEl = document.getElementById('typing-indicator');
+            if (typingEl) typingEl.remove();
+            addMessage(parsed.reply, 'bot');
+        } catch (err) {
+            const typingEl = document.getElementById('typing-indicator');
+            if (typingEl) typingEl.remove();
+            addMessage("Alô? Pode falar.", 'bot');
         }
 
-        chatForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const text = chatInput.value.trim();
-            if(!text) return;
-            
-            addMessage(text, 'user');
-            chatInput.value = '';
-            chatInput.disabled = true;
-            document.getElementById('chat-send-btn').disabled = true;
+        setInputEnabled(true);
+    }
 
-            setTimeout(() => {
-                showTypingIndicator();
-                setTimeout(() => {
-                    const el = document.getElementById('typing-indicator');
-                    if(el) el.remove();
-                    processBotResponse(text);
-                }, 1000 + Math.random() * 800); // Resposta um pouco mais rápida e dinâmica
-            }, 300);
-        });
-
-        function resetCall() {
-            chatMessages.innerHTML = '';
-            chatStep = 0;
-            leadState.frustration = 0; // Zera a raiva do cliente
-            chatInput.disabled = false;
-            document.getElementById('chat-send-btn').disabled = false;
-            chatInput.value = '';
-            chatInput.placeholder = "Digite sua resposta e aperte Enter...";
-            startCallTimer();
-            
-            setTimeout(() => {
-                addMessage(currentLead.greetings, 'bot');
-            }, 500);
-        }
-
-        window.addEventListener('load', () => {
-            renderDashboard();
-        });
-
+    window.addEventListener('load', () => renderDashboard());
     </script>
 </body>
 </html>
