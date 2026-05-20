@@ -199,40 +199,77 @@
     </main>
 
     <script>
+        // Função auxiliar para buscar múltiplas palavras-chave
+        function hasAny(text, words) {
+            return words.some(w => text.includes(w));
+        }
+
+        // Função auxiliar para lidar com cumprimentos (small talk)
+        function isGreeting(text) {
+            const greetings = ['oi', 'ola', 'olá', 'bom dia', 'boa tarde', 'boa noite', 'tudo bem', 'como vai'];
+            return greetings.includes(text.trim()) || text.trim().length <= 3;
+        }
+
         const LEADS = [
             {
                 id: 'mineradora',
                 type: 'outbound',
                 name: 'Carlos Ribeiro',
-                role: 'Gestor de Segurança de Barragens',
+                role: 'Gestor de Seg. de Barragens',
                 company: 'Mineração Vale Ouro',
                 icon: 'fa-helmet-safety',
-                color: '#eab308', // yellow-500
+                color: '#eab308',
                 bgClass: 'bg-yellow-500/20 text-yellow-500',
                 briefing: {
-                    pain: 'Já usam molinete antigo. Têm medo do risco humano (equipe na água) e a lama (fundo móvel) atrapalha a medição. Orçamento curto para comprar.',
-                    trunfos: 'Diga que o evento é <b>gratuito/não é venda</b>. Fale sobre <b>segurança/barco remoto (USV)</b> e correção de lama com <b>RTK</b>.'
+                    pain: 'Usam molinete antigo. Têm medo do risco humano (equipe na água) e a lama (fundo móvel) atrapalha a medição. Orçamento curto para comprar.',
+                    trunfos: 'Diga que o <b>evento</b> é <b>gratuito/não é venda</b>. Fale sobre <b>segurança/barco remoto (USV)</b> e correção de lama com <b>RTK</b>.'
                 },
                 greetings: "Alô, Carlos falando. Tô no meio de um relatório da ANA, o que você manda?",
-                logic: function(step, msg) {
+                logic: function(step, msg, state) {
                     let text = msg.toLowerCase();
+                    
+                    if (isGreeting(text)) return { reply: "Boa tarde. Qual o assunto? Tô meio enrolado aqui, seja direto.", nextStep: step };
+
                     if (step === 0) {
-                        if (text.includes("evento") || text.includes("convite") || text.includes("clean") || text.includes("demonstração")) {
+                        if (hasAny(text, ["evento", "convite", "clean", "hidrogest", "demonstração", "tecnologia", "conhecer", "apresentar"])) {
+                            state.frustration = 0;
                             return { reply: "Olha, se você tá ligando para vender equipamento ADCP, eu já te adianto que não tenho verba neste semestre. Já temos nossos molinetes.", nextStep: 1 };
                         }
-                        return { reply: "Desculpe, não peguei o objetivo da ligação. É para oferecer algum produto?", nextStep: 0 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Amigo, você tá dando muita volta e meu tempo é curto. Me manda um email depois. Tchau.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = [
+                            "Desculpe, não peguei o objetivo da ligação. É para oferecer algum produto?",
+                            "Você é de qual empresa mesmo? Seja direto com o que você quer."
+                        ];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 0 };
                     }
                     if (step === 1) {
-                        if (text.includes("gratuito") || text.includes("não é venda") || text.includes("serviço") || text.includes("demonstração") || text.includes("prática")) {
-                            return { reply: "Ah, não é venda direta? Entendi... Mas pra quê eu iria até aí ver isso? Aqui o nosso maior problema é que a lama trava o equipamento todo.", nextStep: 2 };
+                        if (hasAny(text, ["gratuito", "não é venda", "serviço", "demonstração", "prática", "ingresso", "parceria"])) {
+                            state.frustration = 0;
+                            return { reply: "Ah, não é venda direta? Entendi... Mas pra quê eu iria até aí ver isso? Aqui o nosso maior problema é que a lama trava o equipamento todo e o fundo se move.", nextStep: 2 };
                         }
-                        return { reply: "Como eu falei, não tenho orçamento pra comprar equipamento novo. O que você quer exatamente?", nextStep: 1 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Se é pra comprar, a resposta é não. Fica pra próxima.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = [
+                            "Como eu falei, não tenho orçamento pra comprar equipamento novo agora. Qual a proposta?",
+                            "Certo, mas isso tem custo? Porque se tiver, a diretoria vai barrar."
+                        ];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 1 };
                     }
                     if (step === 2) {
-                        if (text.includes("rtk") || text.includes("fundo móvel") || text.includes("lama") || text.includes("segurança") || text.includes("barco") || text.includes("remoto") || text.includes("usv")) {
-                            return { reply: "Interessante... colocar um barco de controle remoto resolve meu problema de segurança com a equipe na água. E o RTK contorna o fundo móvel. Certo, me mande o convite no email carlos@valeouro.com.", nextStep: 3, done: true };
+                        if (hasAny(text, ["rtk", "fundo móvel", "lama", "segurança", "barco", "remoto", "usv"])) {
+                            return { reply: "Interessante... colocar um barco de controle remoto resolve meu problema de segurança. E o RTK contorna a lama. Certo, me mande o convite no carlos@valeouro.com.", nextStep: 3, done: true };
                         }
-                        return { reply: "Ainda não vi vantagem pra sair daqui e ir ver esse equipamento. O que ele tem de diferente pro meu cenário de barragem?", nextStep: 2 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Isso não me parece resolver o problema da lama no fundo. Deixa quieto. Abraço.", nextStep: -1, done: true, failed: true };
+
+                        let fallbacks = [
+                            "Ainda não vi vantagem pra sair daqui. O que esse equipamento faz com o excesso de lama que o molinete não faz?",
+                            "Cara, se não resolver o problema do fundo móvel e do risco do operador, não me serve."
+                        ];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 2 };
                     }
                     return null;
                 }
@@ -241,35 +278,52 @@
                 id: 'hidreletrica',
                 type: 'outbound',
                 name: 'Fernanda Souza',
-                role: 'Diretora de Operações (PCH)',
+                role: 'Dir. de Operações (PCH)',
                 company: 'EnerRio Energia',
                 icon: 'fa-bolt',
-                color: '#3b82f6', // blue-500
+                color: '#3b82f6',
                 bgClass: 'bg-blue-500/20 text-blue-500',
                 briefing: {
                     pain: 'Precisam medir a "Vazão Ecológica" para não tomar multas da ANA. Mudar o processo que já fazem hoje parece caro e arriscado.',
                     trunfos: 'Citar <b>multas/ANA</b> ou <b>vazão ecológica</b>. Mencionar que a medição é <b>rápida/minutos</b> e que a <b>Hidrogest</b> valida os dados na prática.'
                 },
                 greetings: "Fernanda na linha. Pode falar rápido? Estou indo pra uma reunião de diretoria.",
-                logic: function(step, msg) {
+                logic: function(step, msg, state) {
                     let text = msg.toLowerCase();
+                    
+                    if (isGreeting(text)) return { reply: "Oi, tudo bem. Pode me adiantar o assunto, por favor?", nextStep: step };
+
                     if (step === 0) {
-                        if (text.includes("clean") || text.includes("evento") || text.includes("medição") || text.includes("hidrogest")) {
-                            return { reply: "Nós já fazemos medição de vazão ecológica aqui usando réguas e molinete. Funciona, por que eu mudaria meu processo?", nextStep: 1 };
+                        if (hasAny(text, ["clean", "evento", "medição", "hidrogest", "vazão", "ecológica", "convite"])) {
+                            state.frustration = 0;
+                            return { reply: "Nós já fazemos medição de vazão ecológica aqui usando réguas e molinete. A equipe já tá acostumada. Por que eu mudaria meu processo?", nextStep: 1 };
                         }
-                        return { reply: "Qual o assunto? Seja direto, por favor.", nextStep: 0 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Olha, não consigo falar agora se não for urgente. Tchau.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = ["Qual o assunto principal da ligação?", "Não entendi muito bem. É sobre tecnologia?"];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 0 };
                     }
                     if (step === 1) {
-                        if (text.includes("ana") || text.includes("multa") || text.includes("rápido") || text.includes("minutos") || text.includes("3d") || text.includes("precisão")) {
-                            return { reply: "Realmente, tomar multa da ANA é um risco. Mas mudar de tecnologia é caro. Como eu garanto que os dados desse equipamento de vocês são confiáveis pro órgão regulador?", nextStep: 2 };
+                        if (hasAny(text, ["ana", "multa", "rápido", "minutos", "3d", "precisão", "segurança", "órgão"])) {
+                            state.frustration = 0;
+                            return { reply: "Realmente, tomar multa da ANA por dado impreciso é um risco grande. Mas mudar de tecnologia é caro e gera desconfiança. Como eu garanto que isso funciona na prática?", nextStep: 2 };
                         }
-                        return { reply: "Nosso molinete atende. Qual o grande diferencial para eu prestar atenção nisso?", nextStep: 1 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Meu molinete atende, não vou mudar o processo à toa. Obrigada.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = ["Nosso molinete atende. Qual o grande diferencial pra eu gastar tempo com isso?", "Você tá me dizendo que é melhor, mas em quê exatamente?"];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 1 };
                     }
                     if (step === 2) {
-                        if (text.includes("hidrogest") || text.includes("prática") || text.includes("campo") || text.includes("demonstrar") || text.includes("validado")) {
-                            return { reply: "Ver a Hidrogest aplicando isso em campo e provando o dado faz sentido. Manda o link no meu email fernanda.op@enerrio.com.br que eu vou tentar ir.", nextStep: 3, done: true };
+                        if (hasAny(text, ["hidrogest", "prática", "campo", "demonstrar", "validado", "estudo", "ver", "serviço"])) {
+                            return { reply: "Ver a Hidrogest aplicando isso em campo e validando o dado muda de figura. Manda o link no fernanda@enerrio.com.br que vou tentar ir.", nextStep: 3, done: true };
                         }
-                        return { reply: "Sem garantias técnicas práticas, eu não aprovo mudança de processo.", nextStep: 2 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Sem garantias práticas e sem ver rodando, eu não aprovo. Passar bem.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = ["Só na teoria é bonito, quero ver quem assina o laudo e garante o dado.", "Eu precisaria ver isso operando em um caso real antes de considerar."];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 2 };
                     }
                     return null;
                 }
@@ -278,29 +332,41 @@
                 id: 'efluentes',
                 type: 'inbound',
                 name: 'Roberto Alves',
-                role: 'Coord. de Meio Ambiente',
-                company: 'Indústria Química Beta',
+                role: 'Coord. Meio Ambiente',
+                company: 'Ind. Química Beta',
                 icon: 'fa-industry',
-                color: '#10b981', // emerald-500
+                color: '#10b981',
                 bgClass: 'bg-emerald-500/20 text-emerald-500',
                 briefing: {
-                    pain: 'Preencheu formulário no site. A lâmina de água do efluente tem só 3cm. Estão sendo sobretaxados por medição estimada incorreta.',
-                    trunfos: 'Explicar que o <b>FlowTracker</b> mede no <b>raso (2cm)</b>. Focar no <b>serviço de calibração</b> ou bater de frente com a redução da <b>taxa</b> ambiental.'
+                    pain: 'Preencheu formulário no site. A lâmina de água do efluente tem só 3cm. Estão pagando multa por estimativa errada.',
+                    trunfos: 'Explicar que o <b>FlowTracker</b> mede no <b>raso (2cm)</b>. Focar no <b>serviço/calibração</b> pela Hidrogest.'
                 },
-                greetings: "Boa tarde, aqui é o Roberto da Química Beta. Preenchi o formulário no site. Queria saber como vocês podem ajudar com nossa calha de efluentes, porque a água tem só 3cm e a gente paga multa por estimativa errada.",
-                logic: function(step, msg) {
+                greetings: "Boa tarde, aqui é o Roberto da Química Beta. Deixei meus dados no site. Queria saber se vocês resolvem medição de calha de efluentes, porque a água aqui tem só 3cm de fundura.",
+                logic: function(step, msg, state) {
                     let text = msg.toLowerCase();
+                    
+                    if (isGreeting(text)) return { reply: "Boa tarde! E aí, o que vocês têm de solução pra água rasa?", nextStep: step };
+
                     if (step === 0) {
-                        if (text.includes("flowtracker") || text.includes("raso") || text.includes("2cm") || text.includes("centímetro") || text.includes("precisão")) {
-                            return { reply: "Interessante, não sabia que existia equipamento pra água tão rasa de 2cm. Mas a diretoria congelou compras de equipamentos novos esse ano. Como fazemos?", nextStep: 1 };
+                        if (hasAny(text, ["flowtracker", "raso", "2cm", "2 cm", "centímetro", "precisão", "pontual", "adv"])) {
+                            state.frustration = 0;
+                            return { reply: "Interessante, não sabia que mediam em 2cm. Mas a diretoria congelou compras de equipamentos novos esse ano. Não vão aprovar a compra de um FlowTracker. Como fazemos?", nextStep: 1 };
                         }
-                        return { reply: "Desculpe, não entendi como essa solução resolve o problema da minha lâmina muito rasa.", nextStep: 0 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Se vocês não medem 3cm, não me atende. Desculpe tomar seu tempo.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = ["Mas espera, qual equipamento que faz isso? O ADCP normal não entra em 3cm.", "Não entendi bem. A hélice do molinete nem entra na minha calha. Como vocês medem?"];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 0 };
                     }
                     if (step === 1) {
-                        if (text.includes("serviço") || text.includes("alugar") || text.includes("calibrar") || text.includes("hidrogest") || text.includes("taxa")) {
-                            return { reply: "Se for prestação de serviço pra calibrar as calhas e reduzir a taxa ambiental, aí a diretoria aprova. Me mande os detalhes no roberto@quimicabeta.com que eu agendo a call técnica.", nextStep: 2, done: true };
+                        if (hasAny(text, ["serviço", "alugar", "locação", "calibrar", "calibração", "hidrogest", "prestação"])) {
+                            return { reply: "Ah, se for prestação de serviço pra calibrar as calhas com a Hidrogest, aí a diretoria aprova fácil. Me mande os detalhes no roberto@quimica.com que eu agendo a call técnica.", nextStep: 2, done: true };
                         }
-                        return { reply: "Como falei, comprar equipamento agora não rola. Tem outra saída que não seja compra direta?", nextStep: 1 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Já falei que não posso comprar nada. Se não tem outro jeito, encerramos por aqui.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = ["Cara, comprar equipamento agora não rola. Tem outra saída?", "Não adianta ser bom se eu não posso comprar. Vocês prestam algum tipo de serviço?"];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 1 };
                     }
                     return null;
                 }
@@ -309,29 +375,40 @@
                 id: 'engenheira',
                 type: 'inbound',
                 name: 'Marina Silva',
-                role: 'Engenheira Hidróloga de Campo',
+                role: 'Eng. Hidróloga de Campo',
                 company: 'Águas Estaduais SA',
                 icon: 'fa-water',
-                color: '#8b5cf6', // violet-500
+                color: '#8b5cf6',
                 bgClass: 'bg-violet-500/20 text-violet-500',
                 briefing: {
-                    pain: 'Viu um post de vocês e entrou em contato. Sofre no sol com molinete que trava no mato. Precisa de argumentos para o chefe aprovar a mudança.',
-                    trunfos: 'Explicar que o <b>M9/ADCP</b> não tem <b>partes móveis</b> (não trava). Convidar ela para <b>levar o chefe/diretor</b> pro evento <b>gratuito</b>.'
+                    pain: 'Entrou em contato via LinkedIn. Sofre no sol com molinete travando no mato. Precisa convencer o chefe pão-duro.',
+                    trunfos: 'Citar que o <b>M9/ADCP</b> não tem <b>partes móveis</b>. Convidar para o evento <b>gratuito</b> e falar para levar o <b>chefe/diretor</b>.'
                 },
-                greetings: "Oi, aqui é a Marina. Vi um post de vocês no LinkedIn sobre medição sem travar no mato e resolvi ligar. Meu molinete vive encravando. Como funciona a tecnologia de vocês?",
-                logic: function(step, msg) {
+                greetings: "Oi, aqui é a Marina. Vi um post de vocês no LinkedIn sobre medição rápida. Meu molinete vive encravando no mato, não aguento mais. Como funciona a tecnologia de vocês?",
+                logic: function(step, msg, state) {
                     let text = msg.toLowerCase();
+                    if (isGreeting(text)) return { reply: "Oii! Então, me explica como resolvo esse problema do mato travando a hélice.", nextStep: step };
+
                     if (step === 0) {
-                        if (text.includes("adcp") || text.includes("m9") || text.includes("móveis") || text.includes("acústico") || text.includes("sontek")) {
-                            return { reply: "Sem peças móveis? Isso seria um sonho, pouparia minha vida no sol. Mas quem assina o cheque é meu diretor e ele é bem pão-duro. Como convenço ele?", nextStep: 1 };
+                        if (hasAny(text, ["adcp", "m9", "móveis", "acústico", "sontek", "som", "trava", "hélice"])) {
+                            state.frustration = 0;
+                            return { reply: "Sem peças móveis? Isso seria um sonho, pouparia minha vida no sol. Mas quem assina o cheque é meu diretor e ele é muito resistente a tecnologia nova. Como eu convenço ele?", nextStep: 1 };
                         }
-                        return { reply: "Não peguei a parte técnica. Isso resolve meu problema de mato travando a hélice?", nextStep: 0 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Acho que isso não vai dar certo na nossa operação. Obrigada de qualquer forma.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = ["Não peguei a parte técnica. Por que ele não trava no mato igual o molinete?", "Mas se tem hélice, vai travar do mesmo jeito. Como ele é diferente?"];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 0 };
                     }
                     if (step === 1) {
-                        if (text.includes("chefe") || text.includes("diretor") || text.includes("evento") || text.includes("convite") || text.includes("gratuito") || text.includes("prática")) {
-                            return { reply: "Gostei da ideia! Se é um evento gratuito com a tecnologia rodando na prática, eu arrasto ele comigo pra ver funcionando. Manda o convite no marina.campo@aguas.gov.", nextStep: 2, done: true };
+                        if (hasAny(text, ["chefe", "diretor", "evento", "convite", "gratuito", "prática", "levar", "ir junto"])) {
+                            return { reply: "Gostei da ideia! Um evento gratuito na prática... Vou convencer ele a ir comigo pra ver funcionando com os próprios olhos. Manda o convite no marina@aguas.gov.", nextStep: 2, done: true };
                         }
-                        return { reply: "Ainda não sei como justificar isso pro meu diretor só por telefone. Ele precisa de provas reais.", nextStep: 1 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "É, sem um caso real pra mostrar pra ele, não vou conseguir orçamento. Deixa pra lá.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = ["Ainda não sei como justificar isso pro meu diretor só com um folder. Ele precisa de provas.", "Ele só acredita vendo. Falar no ouvido dele não vai adiantar."];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 1 };
                     }
                     return null;
                 }
@@ -341,34 +418,50 @@
                 type: 'outbound',
                 name: 'Ricardo Gomes',
                 role: 'Sócio-Diretor',
-                company: 'EcoData Consultoria Ambiental',
+                company: 'EcoData Consultoria',
                 icon: 'fa-leaf',
-                color: '#f97316', // orange-500
+                color: '#f97316',
                 bgClass: 'bg-orange-500/20 text-orange-500',
                 briefing: {
-                    pain: 'Perde licitações porque não tem tecnologia avançada (ADCP). Mas comprar um M9 é muito caro para o caixa atual dele.',
-                    trunfos: 'Focar forte em modelo de negócio: <b>aluguel/locação</b> com a Clean, <b>parceria</b> ou subcontratação com a <b>Hidrogest</b>.'
+                    pain: 'Perde licitações porque não tem ADCP. Mas comprar um M9 é muito caro para o caixa atual dele.',
+                    trunfos: 'Focar forte no modelo de negócio: <b>aluguel/locação</b> com a Clean e <b>treinamento/parceria</b> com a Hidrogest.'
                 },
                 greetings: "Consultoria EcoData, Ricardo falando. Boa tarde.",
-                logic: function(step, msg) {
+                logic: function(step, msg, state) {
                     let text = msg.toLowerCase();
+                    if (isGreeting(text)) return { reply: "Boa tarde. Em que posso ajudar a sua empresa?", nextStep: step };
+
                     if (step === 0) {
-                        if (text.includes("adcp") || text.includes("evento") || text.includes("tecnologia")) {
-                            return { reply: "Eu conheço os ADCPs da SonTek, são excelentes. Mas custam centenas de milhares de reais. Uma consultoria pequena como a minha não tem caixa pra isso agora.", nextStep: 1 };
+                        if (hasAny(text, ["adcp", "evento", "tecnologia", "licitação", "m9", "sontek"])) {
+                            state.frustration = 0;
+                            return { reply: "Eu conheço os ADCPs, são fantásticos. Mas custam centenas de milhares de reais. Minha consultoria é pequena, não tenho fluxo de caixa pra um investimento desse porte.", nextStep: 1 };
                         }
-                        return { reply: "Sim, somos uma consultoria hídrica. Em que posso ajudar?", nextStep: 0 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Não tenho interesse em propostas fora da minha realidade financeira. Bom dia.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = ["Sim, trabalhamos com laudos hídricos. Qual a pauta?", "Estou escutando. Qual a tecnologia que vocês oferecem?"];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 0 };
                     }
                     if (step === 1) {
-                        if (text.includes("alugar") || text.includes("locação") || text.includes("serviço") || text.includes("parceria")) {
-                            return { reply: "Locação é um modelo que me interessa, me permite ganhar as licitações grandes sem descapitalizar. Mas e pra operar? Minha equipe nunca pilotou um M9.", nextStep: 2 };
+                        if (hasAny(text, ["alugar", "locação", "serviço", "parceria", "aluguel"])) {
+                            state.frustration = 0;
+                            return { reply: "Locação me interessa muito! Assim consigo ganhar as licitações grandes sem descapitalizar. Mas tem um problema: minha equipe só pilotou molinete, nunca mexemos num M9.", nextStep: 2 };
                         }
-                        return { reply: "Se for para comprar a prazo, ainda fica pesado pro meu fluxo de caixa.", nextStep: 1 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Comprar equipamento está fora de cogitação. Abraço.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = ["Se for para comprar a prazo, ainda fica pesado pro meu caixa.", "Venda direta pra mim não serve hoje. Tem outro modelo de negócio?"];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 1 };
                     }
                     if (step === 2) {
-                        if (text.includes("hidrogest") || text.includes("treinamento") || text.includes("evento") || text.includes("prática") || text.includes("aprender")) {
-                            return { reply: "A Hidrogest dá o treinamento no evento? Ou podemos fechar parceria de operação? Sensacional. Manda a inscrição para contato@ecodata.com.br, vou fazer questão de ir.", nextStep: 3, done: true };
+                        if (hasAny(text, ["hidrogest", "treinamento", "evento", "prática", "aprender", "ensinar", "capacitar"])) {
+                            return { reply: "A Hidrogest vai dar treinamento prático no evento? Sensacional. É isso que eu precisava. Manda a inscrição para contato@ecodata.com.br, estarei lá com certeza.", nextStep: 3, done: true };
                         }
-                        return { reply: "Alugar eu alugo, mas se quebrar na mão de operador inexperiente o prejuízo é meu.", nextStep: 2 };
+                        state.frustration++;
+                        if(state.frustration >= 3) return { reply: "Alugar e quebrar o equipamento por inexperiência é prejuízo dobrado. Vou deixar passar.", nextStep: -1, done: true, failed: true };
+                        
+                        let fallbacks = ["Alugar eu até alugo, mas se quebrar na mão de operador inexperiente, tô frito. Como a gente capacita o pessoal?", "Vocês ensinam a usar o equipamento se eu fechar a locação?"];
+                        return { reply: fallbacks[state.frustration - 1], nextStep: 2 };
                     }
                     return null;
                 }
@@ -380,6 +473,7 @@
         let chatStep = 0;
         let callTimerInterval = null;
         let callSeconds = 0;
+        let leadState = { frustration: 0 }; // Estado dinâmico do cliente na call
 
         const viewDashboard = document.getElementById('view-dashboard');
         const viewChat = document.getElementById('view-chat');
@@ -391,8 +485,6 @@
 
         function switchTab(tab) {
             currentTab = tab;
-            
-            // Estilizar os botões das abas
             const btnOut = document.getElementById('tab-outbound');
             const btnIn = document.getElementById('tab-inbound');
             
@@ -403,14 +495,11 @@
                 btnIn.className = 'px-6 py-2.5 rounded-full font-bold transition-all bg-hidro-main text-white shadow-lg shadow-hidro-main/20 border border-hidro-main';
                 btnOut.className = 'px-6 py-2.5 rounded-full font-bold transition-all bg-darkcard text-slate-400 border border-slate-700 hover:text-white hover:border-slate-500';
             }
-            
             renderDashboard();
         }
 
         function renderDashboard() {
             leadsGrid.innerHTML = '';
-            
-            // Filtra os leads pela aba atual
             const filteredLeads = LEADS.filter(l => l.type === currentTab);
             
             if (filteredLeads.length === 0) {
@@ -460,7 +549,6 @@
             currentLead = LEADS.find(l => l.id === leadId);
             if(!currentLead) return;
 
-            // Preencher Briefing
             document.getElementById('briefing-avatar').className = `w-14 h-14 rounded-full flex items-center justify-center text-2xl shrink-0 ${currentLead.bgClass}`;
             document.getElementById('briefing-avatar').innerHTML = `<i class="fa-solid ${currentLead.icon}"></i>`;
             document.getElementById('briefing-name').textContent = currentLead.name;
@@ -470,7 +558,6 @@
             document.getElementById('briefing-pain').innerHTML = currentLead.briefing.pain;
             document.getElementById('briefing-trunfos').innerHTML = currentLead.briefing.trunfos;
 
-            // Preencher Chat Header
             document.getElementById('chat-header-avatar').className = `w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${currentLead.bgClass}`;
             document.getElementById('chat-header-avatar').innerHTML = `<i class="fa-solid ${currentLead.icon}"></i>`;
             document.getElementById('chat-header-name').textContent = `${currentLead.name} - ${currentLead.company}`;
@@ -545,24 +632,26 @@
         }
 
         function processBotResponse(userMsg) {
-            const result = currentLead.logic(chatStep, userMsg);
+            // Passa o estado de frustração pra lógica do lead
+            const result = currentLead.logic(chatStep, userMsg, leadState);
             
             let replyText = "";
             let isDone = false;
+            let isFailed = false;
 
             if (result) {
                 replyText = result.reply;
                 chatStep = result.nextStep;
                 isDone = result.done || false;
+                isFailed = result.failed || false;
             } else {
-                // Mensagem genérica se a lógica não der match em nenhuma palavra-chave
+                // Fallback genérico se tudo falhar incrivelmente
                 const fallbacks = [
-                    "Não entendi muito bem como isso resolve minha situação. Pode explicar melhor?",
-                    "Como assim? Seja mais direto, por favor.",
-                    "Ainda não vi conexão com o nosso dia a dia aqui.",
-                    "Pode reformular? O áudio falhou um pouco pra mim."
+                    "Não entendi muito bem. Pode explicar melhor?",
+                    "Como assim? Seja mais direto, por favor."
                 ];
                 replyText = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+                leadState.frustration++;
             }
 
             addMessage(replyText, 'bot');
@@ -570,17 +659,23 @@
             if (isDone) {
                 clearInterval(callTimerInterval);
                 chatInput.disabled = true;
-                chatInput.placeholder = "Ligação concluída com sucesso! Agendamento garantido.";
                 document.getElementById('chat-send-btn').disabled = true;
                 
-                // Animação de sucesso
                 setTimeout(() => {
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'w-full text-center py-4 fade-up';
-                    successDiv.innerHTML = `<span class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-sm font-bold tracking-wide"><i class="fa-solid fa-check-double"></i> OBJETIVO CONCLUÍDO</span>`;
-                    chatMessages.appendChild(successDiv);
+                    const statusDiv = document.createElement('div');
+                    statusDiv.className = 'w-full text-center py-4 fade-up';
+                    
+                    if (isFailed) {
+                        chatInput.placeholder = "O cliente desligou. Ligação perdida.";
+                        statusDiv.innerHTML = `<span class="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-sm font-bold tracking-wide"><i class="fa-solid fa-phone-slash"></i> CLIENTE DESLIGOU NA SUA CARA</span>`;
+                    } else {
+                        chatInput.placeholder = "Ligação concluída com sucesso! Agendamento garantido.";
+                        statusDiv.innerHTML = `<span class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-sm font-bold tracking-wide"><i class="fa-solid fa-check-double"></i> AGENDAMENTO CONCLUÍDO</span>`;
+                    }
+                    
+                    chatMessages.appendChild(statusDiv);
                     scrollToBottom();
-                }, 1000);
+                }, 800);
             } else {
                 chatInput.disabled = false;
                 document.getElementById('chat-send-btn').disabled = false;
@@ -600,31 +695,29 @@
 
             setTimeout(() => {
                 showTypingIndicator();
-                // Delay artificial para simular a pessoa digitando/pensando
                 setTimeout(() => {
                     const el = document.getElementById('typing-indicator');
                     if(el) el.remove();
                     processBotResponse(text);
-                }, 1500 + Math.random() * 1000);
-            }, 400);
+                }, 1000 + Math.random() * 800); // Resposta um pouco mais rápida e dinâmica
+            }, 300);
         });
 
         function resetCall() {
             chatMessages.innerHTML = '';
             chatStep = 0;
+            leadState.frustration = 0; // Zera a raiva do cliente
             chatInput.disabled = false;
             document.getElementById('chat-send-btn').disabled = false;
             chatInput.value = '';
-            chatInput.placeholder = "Digite sua resposta...";
+            chatInput.placeholder = "Digite sua resposta e aperte Enter...";
             startCallTimer();
             
-            // Inicia com saudação do bot com pequeno atraso
             setTimeout(() => {
                 addMessage(currentLead.greetings, 'bot');
-            }, 600);
+            }, 500);
         }
 
-        // Initialize on load
         window.addEventListener('load', () => {
             renderDashboard();
         });
