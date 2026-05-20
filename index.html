@@ -406,8 +406,8 @@ REGRAS:
     let callSeconds = 0;
     let conversationHistory = [];
     let callEnded = false;
+    let mockCallState = { stage: 0, turns: 0 }; // Controle de estágio do motor local
 
-    // Referências DOM
     const viewDashboard = document.getElementById('view-dashboard');
     const viewChat = document.getElementById('view-chat');
     const leadsGrid = document.getElementById('leads-grid');
@@ -553,86 +553,166 @@ REGRAS:
     function setInputEnabled(enabled) {
         chatInput.disabled = !enabled;
         document.getElementById('chat-send-btn').disabled = !enabled;
-        if (enabled) {
-            // Em dispositivos mobile, não fazemos auto-focus brutal para não bugar o teclado o tempo todo
-            if(window.innerWidth > 768) chatInput.focus();
+        if (enabled) chatInput.focus();
+    }
+
+    function normalize(str) {
+        // Remove acentos e converte para minúsculo
+        return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function matchAny(text, words) {
+        const normText = normalize(text);
+        return words.some(w => normText.includes(normalize(w)));
+    }
+
+    // Motor de Decisão Offline Baseado nos Briefings
+    function simulateLocalResponse(userText) {
+        mockCallState.turns++;
+        let reply = "";
+        let done = false;
+        let failed = false;
+
+        // Limite de tempo/paciência do lead
+        if (mockCallState.turns > 5) {
+            return { reply: "Olha, essa conversa não está saindo do lugar e estou sem tempo. Me manda um e-mail depois. Tchau.", done: true, failed: true };
+        }
+
+        const leadId = currentLead.id;
+
+        if (leadId === 'mineradora') { // Outbound
+            if (mockCallState.stage === 0) {
+                if (matchAny(userText, ['gratuito', 'evento', 'nao e venda', 'nao e uma venda'])) {
+                    reply = "Entendi... achei que ia me empurrar equipamento. Nossa dor real hoje é o risco de colocar a equipe na água e a lama que trava o sensor. Como um evento ajuda nisso?";
+                    mockCallState.stage = 1;
+                } else {
+                    reply = "Olha, minha verba está congelada esse semestre. Se for pra tentar vender equipamento, eu vou ter que desligar.";
+                }
+            } else if (mockCallState.stage === 1) {
+                if (matchAny(userText, ['barco', 'remoto', 'usv', 'rtk', 'fundo', 'seguranca', 'segurança'])) {
+                    reply = "Tirar o operador da água resolve meu maior problema de segurança. E se medir com lama melhor ainda. Como me inscrevo nesse evento?";
+                    mockCallState.stage = 2;
+                } else {
+                    reply = "Ainda não entendi como isso tira minha equipe do risco da água ou evita a lama. Seja mais claro.";
+                }
+            } else if (mockCallState.stage === 2) {
+                reply = "Fechado. Manda as informações pro email carlos@valeouro.com. Até lá.";
+                done = true;
+            }
+        }
+        else if (leadId === 'hidreletrica') { // Outbound
+            if (mockCallState.stage === 0) {
+                if (matchAny(userText, ['multa', 'ana', 'vazao ecologica', 'risco'])) {
+                    reply = "As multas da ANA são uma preocupação constante mesmo. Mas mudar de molinete agora dá muita dor de cabeça. Como sei que não vou ter problemas com dados falhos na transição?";
+                    mockCallState.stage = 1;
+                } else {
+                    reply = "Nós já usamos molinete e ele funciona bem. Não vejo por que mudar meu processo operacioanal agora e arriscar dor de cabeça.";
+                }
+            } else if (mockCallState.stage === 1) {
+                if (matchAny(userText, ['rapida', 'hidrogest', 'campo', 'valida', 'validacao'])) {
+                    reply = "Se a Hidrogest faz a validação em campo dos dados pra garantir a conformidade, o risco diminui bastante. Como agendamos essa demonstração?";
+                    mockCallState.stage = 2;
+                } else {
+                    reply = "Sem ninguém pra validar os dados em campo pra mim, eu prefiro ficar com meu método antigo que pelo menos eu conheço.";
+                }
+            } else if (mockCallState.stage === 2) {
+                reply = "Ok, pode me enviar a agenda para fernanda@enerrio.com.br. Tchau.";
+                done = true;
+            }
+        }
+        else if (leadId === 'efluentes') { // Inbound
+            if (mockCallState.stage === 0) {
+                if (matchAny(userText, ['flowtracker', 'raso', '2cm', '2 cm'])) {
+                    reply = "Ótimo, se medir em 2cm já resolve a questão técnica do efluente! Mas tem um porém gigante: A diretoria barrou a compra de equipamentos esse ano. Tenho as mãos atadas.";
+                    mockCallState.stage = 1;
+                } else {
+                    reply = "Eu preciso de uma coisa simples: funciona em 3cm de água ou não? Se não funcionar, nem vale a pena continuarmos.";
+                }
+            } else if (mockCallState.stage === 1) {
+                if (matchAny(userText, ['servico', 'locacao', 'calibracao', 'prestacao', 'hidrogest', 'aluguel'])) {
+                    reply = "Perfeito! Como contratação de serviço entra como OPEX, não passa pelo bloqueio da diretoria. Me passa a proposta então pra gente alinhar.";
+                    mockCallState.stage = 2;
+                } else {
+                    reply = "Mas equipamento novo é imobilizado (CAPEX), eu já falei que a diretoria não aprova. Se for só pra vender o equipamento, não adianta.";
+                }
+            } else if (mockCallState.stage === 2) {
+                reply = "Fechado. Envia no roberto@quimica.com. Um abraço e fico no aguardo.";
+                done = true;
+            }
+        }
+        else if (leadId === 'engenheira') { // Inbound
+            if (mockCallState.stage === 0) {
+                if (matchAny(userText, ['nao tem', 'acustica', 'adcp', 'm9', 'sem helice', 'sem partes', 'sem parte'])) {
+                    reply = "Que sonho trabalhar com acústica e não travar! Mas olha... meu diretor não aprova nada novo sem testar na prática. Como convenço aquele conservador?";
+                    mockCallState.stage = 1;
+                } else {
+                    reply = "É que se tiver hélice vai enroscar nos galhos igual o meu antigo e eu vou continuar sofrendo no sol. Qual a tecnologia dele?";
+                }
+            } else if (mockCallState.stage === 1) {
+                if (matchAny(userText, ['chefe', 'diretor', 'evento', 'demo', 'demonstracao', 'levar', 'convite'])) {
+                    reply = "Levar ele num evento prático é a chave de ouro! Ver com os próprios olhos operando na água é a única coisa que ele acredita. Vou levar ele sim!";
+                    mockCallState.stage = 2;
+                } else {
+                    reply = "Pois é, mas sem ele aprovar a gente não compra nada. Ele é totalmente 'São Tomé': só acredito vendo. Tá difícil.";
+                }
+            } else if (mockCallState.stage === 2) {
+                reply = "Manda o link no marina@aguas.gov que eu agendo com ele amanhã mesmo! Muito obrigada!";
+                done = true;
+            }
+        }
+        else if (leadId === 'consultoria') { // Outbound
+            if (mockCallState.stage === 0) {
+                if (matchAny(userText, ['aluguel', 'locacao', 'servico'])) {
+                    reply = "Locação ajusta muito bem meu fluxo de caixa, gostei. Mas me preocupo com o seguinte: a equipe não sabe operar M9. Se quebrarem o equipamento alugado por imperícia, o prejuízo é gigante.";
+                    mockCallState.stage = 1;
+                } else {
+                    reply = "Até sei que o ADCP é melhor, mas comprar equipamento de meio milhão agora é impossível pra mim, não vou nem prolongar a ligação.";
+                }
+            } else if (mockCallState.stage === 1) {
+                if (matchAny(userText, ['treinamento', 'pratico', 'evento', 'hidrogest', 'capacitacao', 'curso'])) {
+                    reply = "Ah, se vocês dão o treinamento prático a história muda. Se a equipe estiver qualificada, elimino meu risco de quebra. Vamos agendar isso.";
+                    mockCallState.stage = 2;
+                } else {
+                    reply = "O risco de quebra sem treinamento é muito alto. Não posso deixar equipamento caro alugado na mão de iniciante.";
+                }
+            } else if (mockCallState.stage === 2) {
+                reply = "Mande os detalhes de contrato e datas do treinamento pro contato@ecodata.com.br. Até logo.";
+                done = true;
+            }
+        }
+
+        return { reply, done, failed };
+    }
+
+    function generateLocalFeedback(failed) {
+        if (failed) {
+            return {
+                pontos: [
+                    { tipo: 'erro', texto: 'A objeção não foi contornada corretamente pelo vendedor.' },
+                    { tipo: 'erro', texto: 'Você não citou as palavras-chave (Seus Trunfos) no momento exato.' },
+                    { tipo: 'dica', texto: 'Observe o painel de Trunfos na esquerda e use as marcações em negrito na sua frase.' }
+                ]
+            };
+        } else {
+            return {
+                pontos: [
+                    { tipo: 'acerto', texto: 'Excelente escuta ativa! Você utilizou as palavras corretas (Trunfos).' },
+                    { tipo: 'acerto', texto: 'Conseguiu reverter a principal objeção do Lead rapidamente.' },
+                    { tipo: 'dica', texto: 'Continue sendo direto e focado no problema do cliente nas próximas ligações.' }
+                ]
+            };
         }
     }
 
-    async function callClaudeAPI(userMessage) {
-        conversationHistory.push({ role: "user", content: userMessage });
-
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                model: "claude-sonnet-4-20250514",
-                max_tokens: 1000,
-                system: currentLead.systemPrompt,
-                messages: conversationHistory
-            })
-        });
-
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
-
-        const data = await response.json();
-        const rawText = data.content.map(c => c.text || '').join('');
-
-        let parsed;
-        try {
-            const cleaned = rawText.replace(/```json|```/g, '').trim();
-            parsed = JSON.parse(cleaned);
-        } catch {
-            parsed = { reply: rawText, done: false, failed: false };
-        }
-
-        conversationHistory.push({ role: "assistant", content: rawText });
-        return parsed;
-    }
-
-    async function requestFeedback() {
-        const transcript = conversationHistory
-            .map(m => `${m.role === 'user' ? 'SDR' : currentLead.name}: ${m.content}`)
-            .join('\n');
-
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                model: "claude-sonnet-4-20250514",
-                max_tokens: 1000,
-                system: `Você é um coach de vendas B2B especialista em SDR. Analise brevemente a ligação e dê feedback em 3 pontos. Responda em JSON: {"pontos": [{"tipo": "acerto|erro|dica", "texto": "..."}]}. Máximo 2 frases por ponto. Sem markdown.`,
-                messages: [{ role: "user", content: `Analise esta ligação:\n\n${transcript}` }]
-            })
-        });
-
-        const data = await response.json();
-        const raw = data.content.map(c => c.text || '').join('');
-        try {
-            return JSON.parse(raw.replace(/```json|```/g, '').trim());
-        } catch {
-            return null;
-        }
-    }
-
-    function showFeedbackPanel(feedback) {
-        if (!feedback || !feedback.pontos) return;
-        const panel = document.getElementById('feedback-panel');
-        const content = document.getElementById('feedback-content');
-        const icons = { acerto: '✅', erro: '❌', dica: '💡' };
-        content.innerHTML = feedback.pontos.map(p =>
-            `<div class="flex gap-2"><span>${icons[p.tipo] || '•'}</span><span>${p.texto}</span></div>`
-        ).join('');
-        panel.classList.remove('hidden');
-    }
-
-    async function processBotResponse(userMsg) {
+    function processBotResponse(userMsg) {
         setInputEnabled(false);
         const typingEl = document.getElementById('typing-indicator');
 
-        try {
-            const result = await callClaudeAPI(userMsg);
+        // Simula o tempo que a IA demoraria para processar/digitar (1 a 2 segundos)
+        setTimeout(() => {
             if (typingEl) typingEl.remove();
+            
+            const result = simulateLocalResponse(userMsg);
             addMessage(result.reply, 'bot');
 
             if (result.done) {
@@ -640,108 +720,76 @@ REGRAS:
                 clearInterval(callTimerInterval);
                 setInputEnabled(false);
 
-                setTimeout(async () => {
+                setTimeout(() => {
                     const statusDiv = document.createElement('div');
                     statusDiv.className = 'w-full text-center py-4 fade-up';
                     if (result.failed) {
-                        chatInput.placeholder = "Ligação perdida.";
-                        statusDiv.innerHTML = `<span class="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-xs lg:text-sm font-bold tracking-wide"><i class="fa-solid fa-phone-slash"></i> CLIENTE DESLIGOU</span>`;
+                        chatInput.placeholder = "O cliente desligou. Ligação perdida.";
+                        statusDiv.innerHTML = `<span class="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-sm font-bold tracking-wide"><i class="fa-solid fa-phone-slash"></i> CLIENTE DESLIGOU NA SUA CARA</span>`;
                     } else {
                         chatInput.placeholder = "Agendamento concluído!";
-                        statusDiv.innerHTML = `<span class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-xs lg:text-sm font-bold tracking-wide"><i class="fa-solid fa-check-double"></i> AGENDAMENTO CONCLUÍDO</span>`;
+                        statusDiv.innerHTML = `<span class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-sm font-bold tracking-wide"><i class="fa-solid fa-check-double"></i> AGENDAMENTO CONCLUÍDO</span>`;
                     }
                     chatMessages.appendChild(statusDiv);
                     scrollToBottom();
 
-                    const feedbackData = await requestFeedback();
+                    // Pede o feedback local
+                    const feedbackData = generateLocalFeedback(result.failed);
                     showFeedbackPanel(feedbackData);
                 }, 800);
             } else {
                 setInputEnabled(true);
             }
-        } catch (err) {
-            if (typingEl) typingEl.remove();
-            addMessage(`<i class="fa-solid fa-exclamation-triangle text-yellow-400 mr-2"></i>Erro de conexão com a IA. Tente novamente.`, 'bot');
-            setInputEnabled(true);
-        }
+        }, 1500 + Math.random() * 1000);
     }
 
-    chatForm.addEventListener('submit', async (e) => {
+    chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
         if (callEnded) return;
         const text = chatInput.value.trim();
         if (!text) return;
-        
         addMessage(text, 'user');
         chatInput.value = '';
         setInputEnabled(false);
         
-        setTimeout(() => showTypingIndicator(), 200);
-        await processBotResponse(text);
+        setTimeout(() => { showTypingIndicator(); }, 200);
+        processBotResponse(text);
     });
 
-    async function resetCall() {
+    function resetCall() {
         chatMessages.innerHTML = '';
         conversationHistory = [];
         callEnded = false;
+        mockCallState = { stage: 0, turns: 0 }; // Reseta a memória do bot
         setInputEnabled(true);
         chatInput.value = '';
-        chatInput.placeholder = "Digite e aperte Enter...";
+        chatInput.placeholder = "Digite sua resposta e pressione Enter...";
         document.getElementById('feedback-panel').classList.add('hidden');
         startCallTimer();
 
         setInputEnabled(false);
         showTypingIndicator();
 
-        try {
-            let openingSystemPrompt = currentLead.systemPrompt;
-            
-            if (currentLead.type === 'outbound') {
-                openingSystemPrompt += `\n\nEsta é a primeira mensagem da ligação. O SDR (vendedor) está te ligando e você acabou de atender. Dê sua saudação de atendimento como ${currentLead.name} (ex: "Alô?", "Quem fala?"). Responda em JSON: {"reply": "...", "done": false, "failed": false}`;
-            } else {
-                openingSystemPrompt += `\n\nEsta é a primeira mensagem da ligação. Você (cliente) ligou para a empresa do SDR (Clean/Hidrogest). O SDR acabou de atender a sua ligação. Inicie a conversa se apresentando brevemente e explicando o motivo do seu contato baseado no seu problema/contexto. Responda em JSON: {"reply": "...", "done": false, "failed": false}`;
-            }
+        // O que cada lead fala assim que atende ou faz a ligação
+        const initialGreetings = {
+            'mineradora': "Alô. Carlos falando. Seja rápido que estou no meio de um relatório urgente pra ANA.",
+            'hidreletrica': "Oi, é a Fernanda. Estou caminhando pra uma reunião de diretoria, do que se trata?",
+            'efluentes': "Bom dia. Aqui é o Roberto da Química Beta. Preenchi o formulário no site de vocês. Minha calha tem 3cm de água e o molinete não entra. Vocês medem no raso?",
+            'engenheira': "Oi! Sou a Marina da Águas Estaduais. Vi um post de vocês no LinkedIn e fiquei muito curiosa. Sofro muito no campo com meu molinete travando no mato. O de vocês tem hélice?",
+            'consultoria': "Alô, Ricardo falando. Pode falar."
+        };
 
-            const response = await fetch("https://api.anthropic.com/v1/messages", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    model: "claude-sonnet-4-20250514",
-                    max_tokens: 300,
-                    system: openingSystemPrompt,
-                    messages: [{ role: "user", content: "[ligação conectada]" }]
-                })
-            });
-
-            const data = await response.json();
-            const raw = data.content.map(c => c.text || '').join('');
-            let parsed;
-            try {
-                parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
-            } catch {
-                parsed = { reply: raw };
-            }
-
-            conversationHistory.push({ role: "user", content: "[ligação conectada]" });
-            conversationHistory.push({ role: "assistant", content: raw });
-
-            const typingEl = document.getElementById('typing-indicator');
-            if (typingEl) typingEl.remove();
-            addMessage(parsed.reply, 'bot');
-        } catch (err) {
+        // Simula delay de conexão inicial
+        setTimeout(() => {
             const typingEl = document.getElementById('typing-indicator');
             if (typingEl) typingEl.remove();
             
-            const fallbackMsg = currentLead.type === 'outbound' 
-                ? "Alô? Pode falar." 
-                : `Olá, aqui é ${currentLead.name}, estou ligando porque estava olhando o site de vocês.`;
-            addMessage(fallbackMsg, 'bot');
-        }
-
-        setInputEnabled(true);
+            const msg = initialGreetings[currentLead.id];
+            addMessage(msg, 'bot');
+            setInputEnabled(true);
+        }, 1500);
     }
 
-    // Inicialização da página
     window.addEventListener('load', () => renderDashboard());
     </script>
 </body>
